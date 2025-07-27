@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Success - LifeLink</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background-color: #1a1a1a;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+        .success-icon {
+            font-size: 48px;
+            color: #00cc00;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #00cc00;
+            margin-bottom: 20px;
+        }
+        .loading {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-icon">✓</div>
+        <h1>Login Successful!</h1>
+        <p>Redirecting to your dashboard...</p>
+        <div class="loading">Please wait...</div>
+    </div>
+
+    <script>
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const userType = urlParams.get('userType');
+        const userId = urlParams.get('userId');
+        const userName = urlParams.get('userName');
+
+        if (token && userType) {
+            // Store authentication data
+            localStorage.setItem('token', token);
+            localStorage.setItem('userType', userType);
+            
+            const userData = {
+                _id: userId,
+                type: userType,
+                profile: { name: userName || 'User' }
+            };
+            localStorage.setItem('user', JSON.stringify(userData));
+
+            // Redirect to appropriate dashboard
+            const dashboardMap = {
+                patient: 'patient-dashboard.html',
+                hospital: 'hospital-dashboard.html',
+                donor: 'donor-dashboard.html',
+                admin: 'admin-dashboard.html'
+            };
+
+            const targetDashboard = dashboardMap[userType];
+            if (targetDashboard) {
+                setTimeout(() => {
+                    window.location.href = targetDashboard;
+                }, 1500);
+            } else {
+                document.querySelector('.container').innerHTML = 
+                    '<h1>Error</h1><p>Unknown user type. Please contact support.</p>';
+            }
+        } else {
+            document.querySelector('.container').innerHTML = 
+                '<h1>Error</h1><p>Invalid login data. Please try again.</p>';
+        }
+    </script>
+</body>
+</html>

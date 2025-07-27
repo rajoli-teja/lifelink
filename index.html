@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>life!!!</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: black;
+      font-family: Arial, sans-serif;
+    }
+
+    .main {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    #logo {
+      height: 200px;
+      width: 200px;
+      background-image: url("logo.png");
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+
+    #title {
+      color: brown;
+      font-size: 48px;
+      font-weight: bold;
+      letter-spacing: 4px;
+    }
+
+    #sub {
+      color: white;
+      font-size: 30px;
+      font-weight: lighter;
+      letter-spacing: 6px;
+    }
+
+    button {
+      padding: 10px 30px;
+      font-size: 16px;
+      border: 2px solid white;
+      border-radius: 10px;
+      background-color: brown;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: darkred;
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    
+    .content {
+      display: flex;
+      align-items: center;
+    }
+    
+    #button {
+      display: flex;
+      flex-direction: row;
+      gap: 50px;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="main">
+      <div class="content">
+        <div id="logo"></div>
+        <div id="title">
+          LIFE LINK
+          <div id="sub">Live Long Life</div>
+        </div>
+      </div>
+      <div id="button">
+        <button onclick="window.location.href='signup.html'">sign up</button>
+        <button onclick="window.location.href='login.html'">log in</button>
+      </div>
+    </div>
+  </header>
+</body>
+</html>

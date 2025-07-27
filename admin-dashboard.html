@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - LifeLink</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-content">
+            <span id="admin-name">Welcome, Admin</span>
+            <button class="logout-btn" onclick="logout()" style="margin-left: auto;">Logout</button>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <div id="alert-container"></div>
+
+        <!-- Live Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-number" id="total-requests">0</span>
+                <div class="stat-label">Total Requests</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="total-donations">0</span>
+                <div class="stat-label">Total Donations</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="total-accounts">0</span>
+                <div class="stat-label">Total Accounts</div>
+            </div>
+        </div>
+
+
+
+        <!-- Row 1: Account Management -->
+        <div class="dashboard-grid" style="grid-template-columns: 1fr;">
+            <!-- Account Management -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title"> Account Management</h2>
+                </div>
+
+                <!-- Add New Admin -->
+                <div style="margin-bottom: 20px; padding: 15px; background: #2a2a2a; border-radius: 8px;">
+                    <h4 style="color: white; margin-bottom: 10px;">Add New Admin</h4>
+                    <form id="add-admin-form">
+                        <div class="form-group">
+                            <input type="text" id="admin-name-input" placeholder="Admin Name" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="email" id="admin-email-input" placeholder="Admin Email" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="password" id="admin-password-input" placeholder="Admin Password" required>
+                        </div>
+                        <button type="submit" class="submit-btn"> Add Admin</button>
+                    </form>
+                </div>
+
+                <!-- Account Table -->
+                <div class="users-table-container" style="overflow-x: auto;">
+                    <table class="users-table" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                        <thead>
+                            <tr>
+                                <th style="padding: 12px; text-align: left; background: #333; color: #fff; border-bottom: 2px solid #cc0000;">Name</th>
+                                <th style="padding: 12px; text-align: left; background: #333; color: #fff; border-bottom: 2px solid #cc0000;">Email</th>
+                                <th style="padding: 12px; text-align: left; background: #333; color: #fff; border-bottom: 2px solid #cc0000;">Role</th>
+                                <th style="padding: 12px; text-align: left; background: #333; color: #fff; border-bottom: 2px solid #cc0000;">Status</th>
+                                <th style="padding: 12px; text-align: left; background: #333; color: #fff; border-bottom: 2px solid #cc0000;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accounts-container">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #ccc; padding: 20px;">Loading accounts...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 2: Patient Requests and Donor Registrations -->
+        <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+            <!-- All Patient Requests -->
+            <div class="dashboard-card" style="min-height: 400px;">
+                <div class="card-header">
+                    <h2 class="card-title"> All Patient Requests</h2>
+                </div>
+                <div id="all-requests-container" style="max-height: 500px; overflow-y: auto;">
+                    <p class="empty-state">
+                        No requests found.
+                    </p>
+                </div>
+            </div>
+
+            <!-- All Donor Registrations -->
+            <div class="dashboard-card" style="min-height: 400px;">
+                <div class="card-header">
+                    <h2 class="card-title"> All Donor Registrations</h2>
+                </div>
+                <div id="all-donations-container" style="max-height: 500px; overflow-y: auto;">
+                    <p class="empty-state">
+                        No donations found.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        // Authentication check
+        function checkAuth() {
+            const userType = localStorage.getItem('userType');
+            const token = localStorage.getItem('token');
+            
+            if (!token || userType !== 'admin') {
+                alert('Please login as an admin first');
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            // Update admin name
+            const userData = localStorage.getItem('user') || localStorage.getItem('lifelink_user');
+            if (userData) {
+                try {
+                    const user = JSON.parse(userData);
+                    const name = user.profile?.name || user.data?.['admin-name'] || user.name || 'Admin';
+                    document.getElementById('admin-name').textContent = `Welcome, ${name}`;
+                } catch (e) {
+                    console.log('Could not parse user data');
+                }
+            }
+            
+            return true;
+        }
+
+        // Check if current user is main admin
+        function isMainAdmin() {
+            try {
+                const userData = JSON.parse(localStorage.getItem('user') || '{}');
+                return userData.email === 'admin@lifelink.com';
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Admin dashboard loading...');
+            checkAuth();
+
+            // Hide admin creation section for secondary admins
+            if (!isMainAdmin()) {
+                const addAdminForm = document.getElementById('add-admin-form');
+                if (addAdminForm) {
+                    const addAdminSection = addAdminForm.closest('.dashboard-card');
+                    if (addAdminSection) {
+                        addAdminSection.style.display = 'none';
+                    }
+                }
+
+                // Add notice for secondary admin
+                const mainContent = document.querySelector('.dashboard-content');
+                if (mainContent) {
+                    const notice = document.createElement('div');
+                    notice.style.cssText = 'background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #00ccff;';
+                    notice.innerHTML = '<p style="color: #00ccff; margin: 0; font-size: 16px;"><strong> Secondary Admin Account</strong><br><small style="color: #ccc;">You have full admin access except admin account management.</small></p>';
+                    mainContent.insertBefore(notice, mainContent.firstChild);
+                }
+            } else {
+                // Add notice for main admin
+                const mainContent = document.querySelector('.dashboard-content');
+                if (mainContent) {
+                    const notice = document.createElement('div');
+                    notice.style.cssText = 'background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffd700;';
+                    notice.innerHTML = '<p style="color: #ffd700; margin: 0; font-size: 16px;"><strong> Main Admin Account</strong><br><small style="color: #ccc;">You have full system control including admin management.</small></p>';
+                    mainContent.insertBefore(notice, mainContent.firstChild);
+                }
+            }
+
+            loadAllData();
+
+            // Auto-refresh every 15 seconds to catch hospital actions quickly
+            setInterval(() => {
+                console.log(' Auto-refreshing admin dashboard...');
+                loadAllData();
+            }, 15000);
+        });
+
+        // Handle add admin form
+        document.getElementById('add-admin-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('admin-name-input').value.trim();
+            const email = document.getElementById('admin-email-input').value.trim();
+            const password = document.getElementById('admin-password-input').value;
+
+            if (!name || !email || !password) {
+                showAlert('Please fill in all fields', 'error');
+                return;
+            }
+
+            // Validate email format
+            const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+            if (!emailRegex.test(email)) {
+                showAlert('Please enter a valid email address', 'error');
+                return;
+            }
+
+            // Validate password length
+            if (password.length < 6) {
+                showAlert('Password must be at least 6 characters long', 'error');
+                return;
+            }
+
+            try {
+                console.log(' Creating new admin account...');
+                console.log('Admin data:', { name, email });
+
+                const result = await api.request('/users/create-admin', {
+                    method: 'POST',
+                    body: {
+                        name: name,
+                        email: email,
+                        password: password
+                    }
+                });
+                console.log('Admin creation response:', result);
+
+                if (result.success) {
+                    this.reset();
+                    showAlert(` New admin "${name}" created successfully!`, 'success');
+                    console.log(' Admin created:', result.admin);
+
+                    // Reload all data to show the new admin
+                    loadAllData();
+                } else {
+                    throw new Error(result.error || 'Failed to create admin account');
+                }
+
+            } catch (error) {
+                console.error(' Add admin error:', error);
+                showAlert(`Failed to add admin: ${error.message}`, 'error');
+            }
+        });
+
+        // Load all dashboard data
+        function loadAllData() {
+            loadAccounts();
+            loadAllRequests();
+            loadAllDonations();
+            updateStatistics();
+        }
+
+        // Load all accounts from database
+        async function loadAccounts() {
+            console.log(' Loading all accounts from database...');
+
+            try {
+                const users = await api.getAllUsers();
+                console.log(' Loaded users:', users);
+
+                const container = document.getElementById('accounts-container');
+
+                if (users && users.length > 0) {
+                    container.innerHTML = users.map(account => `
+                        <tr style="border-bottom: 1px solid #333;">
+                            <td style="padding: 12px; color: #fff;">${account.profile?.name || account.data?.['${account.type}-name'] || 'Unknown'}</td>
+                            <td style="padding: 12px; color: #ccc;">${account.email}</td>
+                            <td style="padding: 12px;">
+                                <span class="status-badge status-${account.type === 'admin' ? 'approved' : 'pending'}" style="font-size: 11px;">
+                                    ${account.type.toUpperCase()}
+                                </span>
+                            </td>
+                            <td style="padding: 12px;">
+                                <span style="color: ${account.status === 'active' ? '#28a745' : '#dc3545'}; font-weight: bold;">
+                                    ${account.status.toUpperCase()}
+                                </span>
+                            </td>
+                            <td style="padding: 12px;">
+                                ${account.email !== 'admin@lifelink.com' ? `
+                                    <button class="action-btn reject-btn" onclick="deleteAccount('${account._id}', '${account.type}', '${account.email}')">
+                                        Delete
+                                    </button>
+                                ` : `
+                                    <span style="color: #ffd700; font-size: 12px; font-weight: bold;">
+                                        Protected
+                                    </span>
+                                `}
+                            </td>
+                        </tr>
+                    `).join('');
+
+                    console.log(' Accounts loaded successfully:', users.length);
+                } else {
+                    container.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #ccc; padding: 20px;">No accounts found.</td></tr>';
+                    console.log(' No accounts found');
+                }
+            } catch (error) {
+                console.error(' Load accounts error:', error);
+                document.getElementById('accounts-container').innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #ff6b6b; padding: 20px;">
+                            Error loading accounts: ${error.message}<br>
+                            <button onclick="loadAccounts()" style="margin-top: 10px; padding: 5px 10px; background: #cc0000; color: white; border: none; border-radius: 3px; cursor: pointer;">
+                                Retry
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Load all requests from database
+        async function loadAllRequests() {
+            try {
+                const result = await api.request('/requests');
+                const container = document.getElementById('all-requests-container');
+
+                if (result.requests && result.requests.length > 0) {
+                    console.log(' Admin loaded requests:', result.requests.length);
+                    
+                    // Sort by newest first
+                    result.requests.sort((a, b) => {
+                        const dateA = new Date(a.createdAt);
+                        const dateB = new Date(b.createdAt);
+                        return dateB - dateA;
+                    });
+
+                    container.innerHTML = result.requests.map(req => {
+                        // Determine hospital information based on status
+                        let hospitalInfo = '';
+                        let statusInfo = '';
+
+                        if (req.status === 'approved' && req.hospitalName) {
+                            hospitalInfo = `
+                                <div style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); padding: 12px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #28a745; box-shadow: 0 2px 4px rgba(40, 167, 69, 0.1);">
+                                    <strong style="color: #155724; font-size: 14px;"> Approved by:</strong> <span style="color: #0d4e1a; font-weight: 600;">${req.hospitalName}</span><br>
+                                    <strong style="color: #155724; font-size: 13px;">Action Date:</strong> <span style="color: #2d5a32;">${new Date(req.updatedAt || req.createdAt).toLocaleDateString()} at ${new Date(req.updatedAt || req.createdAt).toLocaleTimeString()}</span>
+                                </div>
+                            `;
+                        } else if (req.status === 'rejected' || (req.rejectedByHospitals && req.rejectedByHospitals.length > 0)) {
+                            if (req.rejectedByHospitals && req.rejectedByHospitals.length > 0) {
+                                // Multiple hospital rejections
+                                const rejections = req.rejectedByHospitals.map(rejection => `
+                                    <div style="background: linear-gradient(135deg, #f8d7da 0%, #f1b0b7 100%); padding: 12px; margin: 8px 0; border-radius: 8px; border-left: 4px solid #dc3545; box-shadow: 0 2px 4px rgba(220, 53, 69, 0.1);">
+                                        <strong style="color: #721c24; font-size: 14px;"> Rejected by:</strong> <span style="color: #5a1a1a; font-weight: 600;">${rejection.hospitalName}</span><br>
+                                        <strong style="color: #721c24; font-size: 13px;">Reason:</strong> <span style="color: #8b2635; font-style: italic;">${rejection.rejectionReason}</span><br>
+                                        <strong style="color: #721c24; font-size: 13px;">Date:</strong> <span style="color: #6c2c32;">${new Date(rejection.rejectedAt).toLocaleDateString()} at ${new Date(rejection.rejectedAt).toLocaleTimeString()}</span>
+                                    </div>
+                                `).join('');
+                                hospitalInfo = rejections;
+                                statusInfo = `<p style="color: #6c757d; font-weight: 500; margin: 8px 0;"><strong style="color: #495057;">Total Rejections:</strong> <span style="color: #dc3545; font-weight: 600;">${req.rejectedByHospitals.length} hospital(s)</span></p>`;
+                            } else if (req.hospitalName) {
+                                // Legacy rejection format
+                                hospitalInfo = `
+                                    <div style="background: linear-gradient(135deg, #f8d7da 0%, #f1b0b7 100%); padding: 12px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #dc3545; box-shadow: 0 2px 4px rgba(220, 53, 69, 0.1);">
+                                        <strong style="color: #721c24; font-size: 14px;"> Rejected by:</strong> <span style="color: #5a1a1a; font-weight: 600;">${req.hospitalName}</span><br>
+                                        ${req.rejectionReason ? `<strong style="color: #721c24; font-size: 13px;">Reason:</strong> <span style="color: #8b2635; font-style: italic;">${req.rejectionReason}</span><br>` : ''}
+                                        <strong style="color: #721c24; font-size: 13px;">Action Date:</strong> <span style="color: #6c2c32;">${new Date(req.updatedAt || req.createdAt).toLocaleDateString()} at ${new Date(req.updatedAt || req.createdAt).toLocaleTimeString()}</span>
+                                    </div>
+                                `;
+                            }
+                        } else if (req.status === 'pending') {
+                            statusInfo = `<p style="margin: 8px 0;"><strong style="color: #495057;">Status:</strong> <span style="color: #f39c12; font-weight: 600; background: #fff3cd; padding: 4px 8px; border-radius: 4px; border: 1px solid #ffeaa7;">Awaiting hospital review</span></p>`;
+                        }
+
+                        return `
+                        <div class="item-card" style="background: linear-gradient(145deg, #111 0%, #1a1a1a 100%); border-radius: 10px; padding: 15px; margin-bottom: 15px; border: 1px solid #333;">
+                            <div class="item-header">
+                                <h4 class="item-title"> ${req.type.charAt(0).toUpperCase() + req.type.slice(1)} Request</h4>
+                                <span class="status-badge status-${req.status.toLowerCase()}">${req.status.toUpperCase()}</span>
+                            </div>
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Patient:</strong> <span style="color: #2980b9; font-weight: 500;">${req.patientName || 'Unknown'}</span></p>
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Email:</strong> <span style="color: #7f8c8d;">${req.patientEmail || 'N/A'}</span></p>
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Phone:</strong> <span style="color: #7f8c8d;">${req.patientPhone || 'N/A'}</span></p>
+                            ${req.type === 'blood' ? `
+                                ${req.details?.bloodType ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Required Blood Group:</strong> <span style="color: #e74c3c; font-weight: 600;">${req.details.bloodType}</span></p>` : ''}
+                                ${req.details?.bloodUnits ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Units Required:</strong> <span style="color: #8e44ad; font-weight: 500;">${req.details.bloodUnits}</span></p>` : ''}
+                            ` : ''}
+                            ${req.type === 'bed' ? `
+                                ${req.details?.bedType ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Type of Bed:</strong> <span style="color: #2980b9; font-weight: 500;">${req.details.bedType}</span></p>` : ''}
+                                ${req.details?.duration ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Expected Duration (days):</strong> <span style="color: #f39c12; font-weight: 500;">${req.details.duration}</span></p>` : ''}
+                            ` : ''}
+                            ${req.type === 'medicine' ? `
+                                ${req.details?.medicineName ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Medicine Name:</strong> <span style="color: #27ae60; font-weight: 500;">${req.details.medicineName}</span></p>` : ''}
+                                ${req.details?.medicineType ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Medicine Type:</strong> <span style="color: #16a085; font-weight: 500;">${req.details.medicineType}</span></p>` : ''}
+                                ${req.details?.quantity ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Quantity:</strong> <span style="color: #8e44ad; font-weight: 500;">${req.details.quantity}</span></p>` : ''}
+                            ` : ''}
+                            ${req.type === 'doctor' ? `
+                                ${req.details?.doctorSpecialty ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Doctor Specialty:</strong> <span style="color: #2980b9; font-weight: 600;">${req.details.doctorSpecialty}</span></p>` : ''}
+                                ${req.details?.appointmentDate ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Preferred Date:</strong> <span style="color: #f39c12; font-weight: 500;">${req.details.appointmentDate}</span></p>` : ''}
+                            ` : ''}
+                            ${req.details?.urgency ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Urgency Level:</strong> <span style="color: ${req.details.urgency === 'high' || req.details.urgency === 'critical' ? '#e74c3c' : req.details.urgency === 'medium' ? '#f39c12' : '#27ae60'}; font-weight: 600;">${req.details.urgency}</span></p>` : ''}
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Submitted:</strong> <span style="color: #7f8c8d;">${new Date(req.createdAt).toLocaleDateString()} at ${new Date(req.createdAt).toLocaleTimeString()}</span></p>
+                            ${req.details?.medicalHistory ? `<p><strong>Medical History:</strong> ${req.details.medicalHistory.substring(0, 100)}${req.details.medicalHistory.length > 100 ? '...' : ''}</p>` : ''}
+
+                            ${hospitalInfo}
+                            ${statusInfo}
+
+                            <p style="font-size: 12px; color: #95a5a6; margin-top: 12px; padding-top: 8px; border-top: 1px solid #ecf0f1;"><strong style="color: #7f8c8d;">Request ID:</strong> <span style="font-family: monospace; color: #6c757d;">${req._id}</span></p>
+                        </div>
+                        `;
+                    }).join('');
+                } else if (result.requests && result.requests.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #ccc; padding: 20px;">No requests found.</p>';
+                } else {
+                    container.innerHTML = '<p style="text-align: center; color: #ccc; padding: 20px;">No requests found.</p>';
+                }
+            } catch (error) {
+                console.error('Load requests error:', error);
+                document.getElementById('all-requests-container').innerHTML = '<p style="text-align: center; color: #ff6b6b; padding: 20px;">Error loading requests. Please refresh.</p>';
+            }
+        }
+
+        // Load all donations from database
+        async function loadAllDonations() {
+            try {
+                const donations = await api.getDonations();
+                const container = document.getElementById('all-donations-container');
+
+                console.log(' Admin loaded donations:', donations.length);
+
+                if (Array.isArray(donations) && donations.length > 0) {
+                    // Sort by newest first
+                    donations.sort((a, b) => {
+                        const dateA = new Date(a.createdAt);
+                        const dateB = new Date(b.createdAt);
+                        return dateB - dateA;
+                    });
+                    
+                    container.innerHTML = donations.map(don => {
+                        // Determine hospital information based on status
+                        let hospitalInfo = '';
+                        let statusInfo = '';
+
+                        if (don.status === 'approved' && don.hospitalName) {
+                            hospitalInfo = `
+                                <div style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); padding: 12px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #28a745; box-shadow: 0 2px 4px rgba(40, 167, 69, 0.1);">
+                                    <strong style="color: #155724; font-size: 14px;"> Approved by:</strong> <span style="color: #0d4e1a; font-weight: 600;">${don.hospitalName}</span><br>
+                                    <strong style="color: #155724; font-size: 13px;">Action Date:</strong> <span style="color: #2d5a32;">${new Date(don.updatedAt || don.createdAt).toLocaleDateString()} at ${new Date(don.updatedAt || don.createdAt).toLocaleTimeString()}</span>
+                                </div>
+                            `;
+                        } else if (don.status === 'rejected' || (don.rejectedByHospitals && don.rejectedByHospitals.length > 0)) {
+                            if (don.rejectedByHospitals && don.rejectedByHospitals.length > 0) {
+                                // Multiple hospital rejections
+                                const rejections = don.rejectedByHospitals.map(rejection => `
+                                    <div style="background: linear-gradient(135deg, #f8d7da 0%, #f1b0b7 100%); padding: 12px; margin: 8px 0; border-radius: 8px; border-left: 4px solid #dc3545; box-shadow: 0 2px 4px rgba(220, 53, 69, 0.1);">
+                                        <strong style="color: #721c24; font-size: 14px;"> Rejected by:</strong> <span style="color: #5a1a1a; font-weight: 600;">${rejection.hospitalName}</span><br>
+                                        <strong style="color: #721c24; font-size: 13px;">Reason:</strong> <span style="color: #8b2635; font-style: italic;">${rejection.rejectionReason}</span><br>
+                                        <strong style="color: #721c24; font-size: 13px;">Date:</strong> <span style="color: #6c2c32;">${new Date(rejection.rejectedAt).toLocaleDateString()} at ${new Date(rejection.rejectedAt).toLocaleTimeString()}</span>
+                                    </div>
+                                `).join('');
+                                hospitalInfo = rejections;
+                                statusInfo = `<p style="color: #6c757d; font-weight: 500; margin: 8px 0;"><strong style="color: #495057;">Total Rejections:</strong> <span style="color: #dc3545; font-weight: 600;">${don.rejectedByHospitals.length} hospital(s)</span></p>`;
+                            } else if (don.hospitalName) {
+                                // Legacy rejection format
+                                hospitalInfo = `
+                                    <div style="background: linear-gradient(135deg, #f8d7da 0%, #f1b0b7 100%); padding: 12px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #dc3545; box-shadow: 0 2px 4px rgba(220, 53, 69, 0.1);">
+                                        <strong style="color: #721c24; font-size: 14px;"> Rejected by:</strong> <span style="color: #5a1a1a; font-weight: 600;">${don.hospitalName}</span><br>
+                                        ${don.rejectionReason ? `<strong style="color: #721c24; font-size: 13px;">Reason:</strong> <span style="color: #8b2635; font-style: italic;">${don.rejectionReason}</span><br>` : ''}
+                                        <strong style="color: #721c24; font-size: 13px;">Action Date:</strong> <span style="color: #6c2c32;">${new Date(don.updatedAt || don.createdAt).toLocaleDateString()} at ${new Date(don.updatedAt || don.createdAt).toLocaleTimeString()}</span>
+                                    </div>
+                                `;
+                            }
+                        } else if (don.status === 'pending') {
+                            statusInfo = `<p style="margin: 8px 0;"><strong style="color: #495057;">Status:</strong> <span style="color: #f39c12; font-weight: 600; background: #fff3cd; padding: 4px 8px; border-radius: 4px; border: 1px solid #ffeaa7;">Awaiting hospital review</span></p>`;
+                        }
+
+                        return `
+                        <div class="item-card" style="background: linear-gradient(145deg, #111 0%, #1a1a1a 100%); border-radius: 10px; padding: 15px; margin-bottom: 15px; border: 1px solid #333;">
+                            <div class="item-header">
+                                <h4 class="item-title"> ${don.type.charAt(0).toUpperCase() + don.type.slice(1)} Donation</h4>
+                                <span class="status-badge status-${don.status.toLowerCase()}">${don.status.toUpperCase()}</span>
+                            </div>
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Donor:</strong> <span style="color: #2980b9; font-weight: 500;">${don.donorName || 'Unknown'}</span></p>
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Email:</strong> <span style="color: #7f8c8d;">${don.donorEmail || 'N/A'}</span></p>
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Phone:</strong> <span style="color: #7f8c8d;">${don.donorPhone || 'N/A'}</span></p>
+                            ${don.type === 'blood' ? `
+                                ${don.details?.bloodType ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Blood Group:</strong> <span style="color: #e74c3c; font-weight: 600;">${don.details.bloodType}</span></p>` : ''}
+                                ${don.details?.bloodUnits ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Units:</strong> <span style="color: #8e44ad; font-weight: 500;">${don.details.bloodUnits}</span></p>` : ''}
+                                ${don.details?.healthStatus ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Health:</strong> <span style="color: #27ae60; font-weight: 500;">${don.details.healthStatus}</span></p>` : ''}
+                                ${don.details?.weight ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Weight:</strong> <span style="color: #8e44ad; font-weight: 500;">${don.details.weight} kg</span></p>` : ''}
+                                ${don.details?.lastDonationDate ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Last Donation:</strong> <span style="color: #f39c12; font-weight: 500;">${don.details.lastDonationDate}</span></p>` : ''}
+                                ${don.details?.medications && don.details.medications !== 'None' ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Medications:</strong> <span style="color: #e67e22; font-weight: 500;">${don.details.medications}</span></p>` : ''}
+                            ` : ''}
+                            ${don.type === 'medicine' ? `
+                                ${don.details?.medicineName ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Medicine:</strong> <span style="color: #27ae60; font-weight: 600;">${don.details.medicineName}</span></p>` : ''}
+                                ${don.details?.medicineType ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Type:</strong> <span style="color: #16a085; font-weight: 500;">${don.details.medicineType}</span></p>` : ''}
+                                ${don.details?.quantity ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Quantity:</strong> <span style="color: #8e44ad; font-weight: 500;">${don.details.quantity}</span></p>` : ''}
+                                ${don.details?.expiryDate ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Expiry Date:</strong> <span style="color: #e74c3c; font-weight: 500;">${don.details.expiryDate}</span></p>` : ''}
+                            ` : ''}
+                            ${don.type === 'bed' ? `
+                                ${don.details?.bedType ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Bed Type:</strong> <span style="color: #2980b9; font-weight: 600;">${don.details.bedType}</span></p>` : ''}
+                                ${don.details?.quantity ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Number of Beds:</strong> <span style="color: #8e44ad; font-weight: 500;">${don.details.quantity}</span></p>` : ''}
+                                ${don.details?.location ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Location:</strong> <span style="color: #f39c12; font-weight: 500;">${don.details.location}</span></p>` : ''}
+                            ` : ''}
+                            ${don.details?.availability ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Availability:</strong> <span style="color: #f39c12; font-weight: 500;">${don.details.availability}</span></p>` : ''}
+                            ${don.details?.contactPreference ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Contact:</strong> <span style="color: #16a085; font-weight: 500;">${don.details.contactPreference}</span></p>` : ''}
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Registered:</strong> <span style="color: #7f8c8d;">${new Date(don.createdAt).toLocaleDateString()} at ${new Date(don.createdAt).toLocaleTimeString()}</span></p>
+
+                            ${hospitalInfo}
+                            ${statusInfo}
+
+                            <p style="font-size: 12px; color: #95a5a6; margin-top: 12px; padding-top: 8px; border-top: 1px solid #ecf0f1;"><strong style="color: #7f8c8d;">Donation ID:</strong> <span style="font-family: monospace; color: #6c757d;">${don._id}</span></p>
+                        </div>
+                        `;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<p style="text-align: center; color: #ccc; padding: 20px;">No donations found.</p>';
+                }
+            } catch (error) {
+                console.error('Load donations error:', error);
+                document.getElementById('all-donations-container').innerHTML = '<p style="text-align: center; color: #ff6b6b; padding: 20px;">Error loading donations. Please refresh.</p>';
+            }
+        }
+
+        // Update statistics from database
+        async function updateStatistics() {
+            console.log(' Updating statistics from database...');
+
+            try {
+                let totalAccounts = 0, totalRequests = 0, totalDonations = 0;
+
+                // Get all users count
+                try {
+                    const users = await api.getAllUsers();
+                    totalAccounts = Array.isArray(users) ? users.length : 0;
+                    console.log(' Total accounts:', totalAccounts);
+                } catch (error) {
+                    console.error('Error loading users for stats:', error);
+                }
+
+                // Get all requests
+                try {
+                    const requestsResult = await api.request('/requests');
+                    const requests = requestsResult.requests || requestsResult;
+                    if (Array.isArray(requests)) {
+                        totalRequests = requests.length;
+                    }
+                    console.log(' Total requests:', totalRequests);
+                } catch (error) {
+                    console.error('Error loading requests for stats:', error);
+                }
+
+                // Get all donations
+                try {
+                    const donations = await api.getDonations();
+                    if (Array.isArray(donations)) {
+                        totalDonations = donations.length;
+                        console.log(' Total donations:', totalDonations);
+                    }
+                } catch (error) {
+                    console.error('Error loading donations for stats:', error);
+                }
+
+                // Update UI
+                document.getElementById('total-requests').textContent = totalRequests;
+                document.getElementById('total-donations').textContent = totalDonations;
+                document.getElementById('total-accounts').textContent = totalAccounts;
+
+                console.log(' Statistics updated:', { totalAccounts, totalRequests, totalDonations });
+
+            } catch (error) {
+                console.error(' Statistics update error:', error);
+
+                // Fallback to localStorage if API fails
+                console.log(' Falling back to localStorage...');
+                const requests = JSON.parse(localStorage.getItem('patientRequests') || '[]');
+                const donations = JSON.parse(localStorage.getItem('donorRegistrations') || '[]');
+                const accounts = JSON.parse(localStorage.getItem('allAccounts') || '[]');
+
+                document.getElementById('total-requests').textContent = requests.length;
+                document.getElementById('total-donations').textContent = donations.length;
+                document.getElementById('total-accounts').textContent = accounts.length;
+            }
+        }
+
+        // Delete account from database
+        async function deleteAccount(accountId, accountType, accountEmail) {
+            // Prevent deletion of main admin
+            if (accountEmail === 'admin@lifelink.com') {
+                showAlert(' Main admin account cannot be deleted!', 'error');
+                return;
+            }
+
+            // Get current user info
+            const currentUserData = localStorage.getItem('user');
+            let currentUserEmail = '';
+            try {
+                const userData = JSON.parse(currentUserData);
+                currentUserEmail = userData.email || '';
+            } catch (e) {
+                console.log('Could not parse current user data');
+            }
+
+            // Check if trying to delete another admin
+            if (accountType === 'admin' && currentUserEmail !== 'admin@lifelink.com') {
+                showAlert(' Only the main admin can delete other admin accounts!', 'error');
+                return;
+            }
+
+            const adminNote = accountType === 'admin' ? '\n\n️ WARNING: This will remove admin privileges!' : '';
+            const confirmMessage = `️ DANGER: Delete ${accountType} account?\n\nEmail: ${accountEmail}${adminNote}\n\nThis will permanently delete:\n- User account from database\n- All associated data\n- Cannot be undone\n\nType "DELETE" to confirm:`;
+
+            const userInput = prompt(confirmMessage);
+
+            if (userInput !== 'DELETE') {
+                showAlert('Account deletion cancelled.', 'info');
+                return;
+            }
+
+            try {
+                console.log(`️ Deleting ${accountType} account:`, accountId);
+
+                const result = await api.deleteUser(accountId);
+
+                if (result) {
+                    const accountTypeDisplay = accountType === 'admin' ? 'Admin' : accountType;
+                    showAlert(` ${accountTypeDisplay} account "${accountEmail}" deleted successfully!`, 'success');
+                    console.log(' Account deleted:', result.message || 'Success');
+
+                    // Reload all data to reflect changes
+                    loadAllData();
+                } else {
+                    throw new Error(result.error || 'Failed to delete account');
+                }
+
+            } catch (error) {
+                console.error(' Delete account error:', error);
+                showAlert(`Failed to delete account: ${error.message}`, 'error');
+            }
+        }
+
+        // Helper functions
+        function getAccountIcon(type) {
+            const icons = {
+                patient: '',
+                donor: '',
+                hospital: '',
+                admin: ''
+            };
+            return icons[type] || '';
+        }
+
+        // Show alert
+        function showAlert(message, type) {
+            const container = document.getElementById('alert-container');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            container.appendChild(alert);
+            
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+
+
+        // Logout
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - LifeLink</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background-color: #1a1a1a;
+            padding: 30px 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+            width: 100%;
+            max-width: 450px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .role-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: space-between;
+        }
+
+        .role-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid white;
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .role-btn:hover {
+            background-color: #333;
+        }
+
+        .role-btn.active {
+            background: #cc0000;
+            border-color: #cc0000;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid white;
+            border-radius: 5px;
+            background-color: transparent;
+            color: white;
+            box-sizing: border-box;
+            transition: border 0.3s, box-shadow 0.3s;
+        }
+
+        input:hover,
+        input:focus,
+        textarea:hover,
+        textarea:focus,
+        select:hover,
+        select:focus {
+            border-color: #00ccff;
+            box-shadow: 0 0 5px #00ccff;
+            outline: none;
+        }
+
+        select option {
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .submit-btn {
+            padding: 10px;
+            width: 100%;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #cc0000;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease, filter 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            background-color: darkred;
+            filter: brightness(1.1);
+        }
+
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+        }
+
+        .error-message {
+            color: #cc0000;
+            font-size: 0.9em;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .alert {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 0.9em;
+            display: none;
+        }
+
+        .alert-error {
+            background: rgba(204, 0, 0, 0.2);
+            color: #cc0000;
+        }
+
+        .alert-success {
+            background: rgba(0, 204, 0, 0.2);
+            color: #00cc00;
+        }
+
+        .login-link {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 0.9em;
+        }
+
+        .login-link a {
+            color: #00ccff;
+            text-decoration: none;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sign Up</h1>
+        <div class="alert alert-error" id="error-alert"></div>
+        <div class="alert alert-success" id="success-alert"></div>
+
+        <div class="role-selector">
+            <button class="role-btn active" onclick="showForm('patient')">Patient</button>
+            <button class="role-btn" onclick="showForm('hospital')">Hospital</button>
+            <button class="role-btn" onclick="showForm('donor')">Donor</button>
+        </div>
+
+        <!-- Patient Form -->
+        <form id="patient-form" class="form-section active">
+            <div class="form-group">
+                <label for="patient-name">Full Name</label>
+                <input type="text" id="patient-name" required minlength="2">
+                <div class="error-message">Name must be at least 2 characters long</div>
+            </div>
+            <div class="form-group">
+                <label for="patient-email">Email</label>
+                <input type="email" id="patient-email" required>
+                <div class="error-message">Please enter a valid email</div>
+            </div>
+            <div class="form-group">
+                <label for="patient-phone">Phone</label>
+                <input type="tel" id="patient-phone" required pattern="[0-9]{10}">
+                <div class="error-message">Enter 10-digit phone number</div>
+            </div>
+            <div class="form-group">
+                <label for="patient-password">Password</label>
+                <input type="password" id="patient-password" required minlength="8">
+                <div class="error-message">Password must be at least 8 characters</div>
+            </div>
+            <button type="submit" class="submit-btn">Sign Up</button>
+        </form>
+
+        <!-- Hospital Form -->
+        <form id="hospital-form" class="form-section">
+            <div class="form-group">
+                <label for="hospital-name">Hospital Name</label>
+                <input type="text" id="hospital-name" required minlength="2">
+                <div class="error-message">Hospital name must be at least 2 characters long</div>
+            </div>
+            <div class="form-group">
+                <label for="hospital-email">Email</label>
+                <input type="email" id="hospital-email" required>
+                <div class="error-message">Please enter a valid email</div>
+            </div>
+            <div class="form-group">
+                <label for="hospital-phone">Phone</label>
+                <input type="tel" id="hospital-phone" required pattern="[0-9]{10}">
+                <div class="error-message">Enter 10-digit phone number</div>
+            </div>
+            <div class="form-group">
+                <label for="hospital-address">Address</label>
+                <input type="text" id="hospital-address" required minlength="5">
+                <div class="error-message">Address must be at least 5 characters long</div>
+            </div>
+            <div class="form-group">
+                <label for="hospital-password">Password</label>
+                <input type="password" id="hospital-password" required minlength="8">
+                <div class="error-message">Password must be at least 8 characters</div>
+            </div>
+            <button type="submit" class="submit-btn">Sign Up</button>
+        </form>
+
+        <!-- Donor Form -->
+        <form id="donor-form" class="form-section">
+            <div class="form-group">
+                <label for="donor-name">Full Name</label>
+                <input type="text" id="donor-name" required minlength="2">
+                <div class="error-message">Name must be at least 2 characters long</div>
+            </div>
+            <div class="form-group">
+                <label for="donor-email">Email</label>
+                <input type="email" id="donor-email" required>
+                <div class="error-message">Please enter a valid email</div>
+            </div>
+            <div class="form-group">
+                <label for="donor-phone">Phone</label>
+                <input type="tel" id="donor-phone" required pattern="[0-9]{10}">
+                <div class="error-message">Enter 10-digit phone number</div>
+            </div>
+            <div class="form-group">
+                <label for="donor-blood-group">Blood Group</label>
+                <select id="donor-blood-group" required>
+                    <option value="">Select Blood Group</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                </select>
+                <div class="error-message">Please select a blood group</div>
+            </div>
+            <div class="form-group">
+                <label for="donor-password">Password</label>
+                <input type="password" id="donor-password" required minlength="8">
+                <div class="error-message">Password must be at least 8 characters</div>
+            </div>
+            <button type="submit" class="submit-btn">Sign Up</button>
+        </form>
+
+        <div class="login-link">
+            Already have an account? <a href="login.html">Log In</a>
+        </div>
+
+        <div class="login-link" style="margin-top: 10px;">
+            <a href="index.html">← Back to Home</a>
+        </div>
+        
+        <!-- Google Sign Up Button -->
+        <div style="margin-top: 20px; text-align: center;">
+            <div style="position: relative; margin-bottom: 15px;">
+                <hr style="border: none; border-top: 1px solid #333; margin: 10px 0;">
+                <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #1a1a1a; padding: 0 10px; color: #999;">OR</span>
+            </div>
+            <a href="/api/users/auth/google" style="display: inline-block; width: 100%; padding: 12px; background: linear-gradient(135deg, #cc0000 0%, #990000 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; border: 2px solid #cc0000; box-shadow: 0 4px 15px rgba(204, 0, 0, 0.3);" onmouseover="this.style.background='linear-gradient(135deg, #990000 0%, #cc0000 100%)'; this.style.borderColor='#ff3333'; this.style.boxShadow='0 6px 20px rgba(204, 0, 0, 0.4)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.background='linear-gradient(135deg, #cc0000 0%, #990000 100%)'; this.style.borderColor='#cc0000'; this.style.boxShadow='0 4px 15px rgba(204, 0, 0, 0.3)'; this.style.transform='translateY(0)';">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48" style="margin-right: 10px;">
+                    <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+                    <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+                    <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+                    <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+                </svg>
+                Sign up with Google
+            </a>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        let currentForm = 'patient';
+
+        function showForm(formType) {
+            // Hide all forms
+            document.querySelectorAll('.form-section').forEach(form => {
+                form.classList.remove('active');
+            });
+
+            // Remove active class from all buttons
+            document.querySelectorAll('.role-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected form
+            document.getElementById(`${formType}-form`).classList.add('active');
+
+            // Add active class to selected button
+            event.target.classList.add('active');
+
+            currentForm = formType;
+        }
+
+        function showAlert(message, type) {
+            const alert = document.getElementById(`${type}-alert`);
+            alert.textContent = message;
+            alert.style.display = 'block';
+            setTimeout(() => alert.style.display = 'none', 5000);
+        }
+
+        function validateForm(formType) {
+            const form = document.getElementById(`${formType}-form`);
+            const inputs = form.querySelectorAll('input[required], select[required]');
+            let isValid = true;
+
+            inputs.forEach(input => {
+                const errorElement = input.nextElementSibling;
+                let inputValid = true;
+
+                if (input.type === 'email') {
+                    inputValid = input.checkValidity() && input.value.includes('@');
+                } else if (input.type === 'tel') {
+                    inputValid = /^[0-9]{10}$/.test(input.value);
+                } else if (input.type === 'password') {
+                    inputValid = input.value.length >= 8;
+                } else if (input.tagName === 'SELECT') {
+                    inputValid = input.value !== '';
+                } else {
+                    inputValid = input.value.trim().length >= (input.minLength || 1);
+                }
+
+                if (errorElement && errorElement.classList.contains('error-message')) {
+                    errorElement.style.display = inputValid ? 'none' : 'block';
+                }
+
+                if (!inputValid) {
+                    isValid = false;
+                }
+            });
+
+            return isValid;
+        }
+
+        async function handleSignup(event) {
+            event.preventDefault();
+
+            if (!validateForm(currentForm)) {
+                return;
+            }
+
+            const form = event.target;
+            const submitBtn = form.querySelector('.submit-btn');
+            const originalText = submitBtn.textContent;
+
+            submitBtn.textContent = 'Signing Up...';
+            submitBtn.disabled = true;
+
+            try {
+                let userData = { type: currentForm };
+
+                if (currentForm === 'patient') {
+                    userData = {
+                        type: 'patient',
+                        name: document.getElementById('patient-name').value,
+                        email: document.getElementById('patient-email').value,
+                        phone: document.getElementById('patient-phone').value,
+                        password: document.getElementById('patient-password').value
+                    };
+                } else if (currentForm === 'hospital') {
+                    userData = {
+                        type: 'hospital',
+                        name: document.getElementById('hospital-name').value,
+                        email: document.getElementById('hospital-email').value,
+                        phone: document.getElementById('hospital-phone').value,
+                        address: document.getElementById('hospital-address').value,
+                        password: document.getElementById('hospital-password').value
+                    };
+                } else if (currentForm === 'donor') {
+                    userData = {
+                        type: 'donor',
+                        name: document.getElementById('donor-name').value,
+                        email: document.getElementById('donor-email').value,
+                        phone: document.getElementById('donor-phone').value,
+                        bloodGroup: document.getElementById('donor-blood-group').value,
+                        password: document.getElementById('donor-password').value
+                    };
+                }
+
+                const response = await api.register(userData);
+
+                if (response.success) {
+                    showAlert('Registration successful! Redirecting to login...', 'success');
+
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 1500);
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                showAlert(error.message || 'Registration failed. Please try again.', 'error');
+            } finally {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        // Add event listeners to all forms
+        document.getElementById('patient-form').addEventListener('submit', handleSignup);
+        document.getElementById('hospital-form').addEventListener('submit', handleSignup);
+        document.getElementById('donor-form').addEventListener('submit', handleSignup);
+
+        // Add real-time validation
+        document.querySelectorAll('input, select').forEach(input => {
+            input.addEventListener('blur', () => {
+                const form = input.closest('.form-section');
+                if (form && form.classList.contains('active')) {
+                    const formType = form.id.replace('-form', '');
+                    validateForm(formType);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+

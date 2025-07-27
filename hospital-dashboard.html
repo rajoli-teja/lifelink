@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Dashboard - LifeLink</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .donor-item {
+            transition: all 0.3s ease-in-out;
+        }
+
+        .processing-feedback {
+            text-align: center;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        .processing-accepted {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .processing-rejected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .history-item {
+            border-left: 4px solid #ccc;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .history-item.approved {
+            border-left-color: #28a745;
+        }
+        
+        .history-item.rejected {
+            border-left-color: #dc3545;
+        }
+        
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .status-badge.approved {
+            background: #d4edda;
+            color: #155724;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status-badge.rejected {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .item-details p {
+            margin: 4px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-content">
+            <span id="hospital-name">Welcome, Hospital</span>
+            <button class="logout-btn" onclick="logout()" style="margin-left: auto;">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="alert-container"></div>
+
+        <div class="stats-overview">
+            <div class="stat-card">
+                <h3>Pending Requests</h3>
+                <span class="stat-number" id="pending-requests">0</span>
+            </div>
+            <div class="stat-card">
+                <h3>Available Donors</h3>
+                <span class="stat-number" id="available-donors">0</span>
+            </div>
+        </div>
+
+        <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+            <div class="dashboard-card" style="min-height: 400px;">
+                <div class="card-header">
+                    <h2>Patient Requests</h2>
+                </div>
+                <div id="patient-requests-container" style="max-height: 500px; overflow-y: auto;">
+                    <p class="empty-state">No patient requests at the moment.</p>
+                </div>
+            </div>
+
+            <div class="dashboard-card" style="min-height: 400px;">
+                <div class="card-header">
+                    <h2>Available Donors</h2>
+                </div>
+                <div id="donor-registrations-container" style="max-height: 500px; overflow-y: auto;">
+                    <p class="empty-state">No donor registrations available.</p>
+                </div>
+            </div>
+
+            <div class="dashboard-card" style="min-height: 400px;">
+                <div class="card-header">
+                    <h2>History</h2>
+                </div>
+                <div id="hospital-history-container" style="max-height: 500px; overflow-y: auto;">
+                    <p class="empty-state">Loading your request history...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        function checkAuth() {
+            const userType = localStorage.getItem('userType');
+            const token = localStorage.getItem('token');
+            
+            if (!token || userType !== 'hospital') {
+                alert('Please login as a hospital first');
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            const userData = localStorage.getItem('user') || localStorage.getItem('lifelink_user');
+            if (userData) {
+                try {
+                    const user = JSON.parse(userData);
+                    const name = user.profile?.name || user.data?.['hospital-name'] || user.name || 'Hospital';
+                    document.getElementById('hospital-name').textContent = `Welcome, ${name}`;
+                } catch (e) {
+                    // Could not parse user data
+                }
+            }
+            
+            return true;
+        }
+
+        async function acceptDonation(donationId) {
+            if (!confirm('Are you sure you want to accept this donation?\n\nThis will assign the donation to your hospital.')) {
+                return;
+            }
+
+            try {
+                console.log('Accepting donation:', donationId);
+                
+                const response = await fetch(`/api/donations/${donationId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        status: 'approved'
+                    })
+                });
+
+                const result = await response.json();
+                console.log('Accept donation response:', result);
+
+                if (response.ok && result.success) {
+                    showAlert('Donation accepted successfully!', 'success');
+                    
+                    const donationElement = document.querySelector(`[data-donation-id="${donationId}"]`);
+                    if (donationElement) {
+                        donationElement.style.transition = 'opacity 0.3s ease-out';
+                        donationElement.style.opacity = '0.5';
+                        donationElement.innerHTML = '<p style="text-align: center; color: #28a745; padding: 20px;">Accepted - Moving to History...</p>';
+                    }
+
+                    // Immediate refresh without delay
+                    await loadDonorRegistrations();
+                    await loadHospitalHistory();
+                    updateStatistics();
+                    
+                    // Also trigger a delayed refresh to ensure all data is updated
+                    setTimeout(async () => {
+                        await loadDonorRegistrations();
+                        await loadHospitalHistory();
+                        updateStatistics();
+                    }, 1000);
+                } else {
+                    throw new Error(result.error || 'Failed to accept donation');
+                }
+            } catch (error) {
+                console.error('Accept donation error:', error);
+                showAlert(`Failed to accept donation: ${error.message}`, 'error');
+            }
+        }
+
+        async function rejectDonation(donationId) {
+            const rejectionReason = prompt('Please provide a reason for rejection:');
+            
+            if (!rejectionReason || rejectionReason.trim() === '') {
+                return; // User cancelled or didn't provide reason
+            }
+
+            if (!confirm(`Are you sure you want to reject this donation?\n\nReason: ${rejectionReason.trim()}`)) {
+                return;
+            }
+
+            try {
+                console.log('Rejecting donation:', donationId, 'with reason:', rejectionReason);
+                
+                const response = await fetch(`/api/donations/${donationId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        status: 'rejected',
+                        rejectionReason: rejectionReason.trim()
+                    })
+                });
+
+                const result = await response.json();
+                console.log('Reject donation response:', result);
+
+                if (response.ok && result.success) {
+                    showAlert('Donation rejected successfully!', 'success');
+                    
+                    const donationElement = document.querySelector(`[data-donation-id="${donationId}"]`);
+                    if (donationElement) {
+                        donationElement.style.transition = 'opacity 0.3s ease-out';
+                        donationElement.style.opacity = '0.5';
+                        donationElement.innerHTML = '<p style="text-align: center; color: #dc3545; padding: 20px;">Rejected - Moving to History...</p>';
+                    }
+
+                    // Immediate refresh without delay
+                    await loadDonorRegistrations();
+                    await loadHospitalHistory();
+                    updateStatistics();
+                    
+                    // Also trigger a delayed refresh to ensure all data is updated
+                    setTimeout(async () => {
+                        await loadDonorRegistrations();
+                        await loadHospitalHistory();
+                        updateStatistics();
+                    }, 1000);
+                } else {
+                    throw new Error(result.error || 'Failed to reject donation');
+                }
+            } catch (error) {
+                console.error('Reject donation error:', error);
+                showAlert(`Failed to reject donation: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadAllData() {
+            await loadPatientRequests();
+            await loadDonorRegistrations();
+            await loadHospitalHistory();
+            setTimeout(() => updateStatistics(), 200);
+        }
+
+        async function loadPatientRequests() {
+            try {
+                const result = await api.request('/requests');
+                const container = document.getElementById('patient-requests-container');
+                const requests = result.requests || result;
+
+                if (Array.isArray(requests) && requests.length > 0) {
+                    // Filter to show only truly available requests:
+                    // 1. Status must be 'pending' (not approved by any hospital)
+                    // 2. Not rejected by current hospital
+                    const currentHospitalId = JSON.parse(localStorage.getItem('user'))._id;
+                    const availableRequests = requests.filter(req => {
+                        // Only show pending requests
+                        if (req.status !== 'pending') return false;
+                        
+                        // Don't show if rejected by current hospital
+                        if (req.rejectedByHospitals && req.rejectedByHospitals.some(r => 
+                            (r.hospitalId._id || r.hospitalId) === currentHospitalId
+                        )) {
+                            return false;
+                        }
+                        
+                        return true;
+                    });
+
+                    if (availableRequests.length === 0) {
+                        container.innerHTML = '<p class="empty-state">No available patient requests.</p>';
+                        return;
+                    }
+
+                    container.innerHTML = availableRequests.map(req => `
+                        <div class="request-item" data-request-id="${req._id}">
+                            <div class="request-header">
+                                <h4>${req.type.charAt(0).toUpperCase() + req.type.slice(1)} Request</h4>
+                                <span class="status-badge status-pending">${req.status}</span>
+                            </div>
+                            <p><strong>Patient:</strong> ${req.patientName || 'Unknown'}</p>
+                            <p><strong>Email:</strong> ${req.patientEmail || 'N/A'}</p>
+                            <p><strong>Phone:</strong> ${req.patientPhone || 'N/A'}</p>
+                            ${req.type === 'blood' ? `
+                                ${req.details?.bloodType ? `<p><strong>Required Blood Group:</strong> ${req.details.bloodType}</p>` : ''}
+                                ${req.details?.bloodUnits ? `<p><strong>Units Required:</strong> ${req.details.bloodUnits}</p>` : ''}
+                            ` : ''}
+                            ${req.type === 'bed' ? `
+                                ${req.details?.bedType ? `<p><strong>Type of Bed:</strong> ${req.details.bedType}</p>` : ''}
+                                ${req.details?.duration ? `<p><strong>Expected Duration (days):</strong> ${req.details.duration}</p>` : ''}
+                            ` : ''}
+                            ${req.type === 'medicine' ? `
+                                ${req.details?.medicineName ? `<p><strong>Medicine Name:</strong> ${req.details.medicineName}</p>` : ''}
+                                ${req.details?.medicineType ? `<p><strong>Medicine Type:</strong> ${req.details.medicineType}</p>` : ''}
+                                ${req.details?.quantity ? `<p><strong>Quantity:</strong> ${req.details.quantity}</p>` : ''}
+                            ` : ''}
+                            ${req.type === 'doctor' ? `
+                                ${req.details?.doctorSpecialty ? `<p><strong>Doctor Specialty:</strong> ${req.details.doctorSpecialty}</p>` : ''}
+                                ${req.details?.appointmentDate ? `<p><strong>Preferred Date:</strong> ${req.details.appointmentDate}</p>` : ''}
+                            ` : ''}
+                            ${req.details?.urgency ? `<p><strong>Urgency Level:</strong> ${getUrgencyIcon(req.details.urgency)} ${req.details.urgency}</p>` : ''}
+                            ${req.details?.medicalHistory ? `<p><strong>Medical History:</strong> ${req.details.medicalHistory.substring(0, 100)}${req.details.medicalHistory.length > 100 ? '...' : ''}</p>` : ''}
+                            ${req.details?.additionalNotes ? `<p><strong>Notes:</strong> ${req.details.additionalNotes.substring(0, 100)}${req.details.additionalNotes.length > 100 ? '...' : ''}</p>` : ''}
+                            <p><strong>Submitted:</strong> ${new Date(req.createdAt).toLocaleDateString()} at ${new Date(req.createdAt).toLocaleTimeString()}</p>
+
+                            <div class="action-buttons">
+                                <button class="accept-btn" onclick="updateRequestStatus('${req._id}', 'approved')">
+                                    Accept
+                                </button>
+                                <button class="reject-btn" onclick="updateRequestStatus('${req._id}', 'rejected')">
+                                    Reject
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else if (Array.isArray(requests) && requests.length === 0) {
+                    container.innerHTML = '<p class="empty-state">No patient requests found.</p>';
+                } else {
+                    container.innerHTML = '<p class="empty-state">Unable to load patient requests.</p>';
+                }
+            } catch (error) {
+                document.getElementById('patient-requests-container').innerHTML = `
+                    <p class="empty-state">Unable to load requests: ${error.message}</p>
+                `;
+            }
+        }
+
+        async function loadDonorRegistrations() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+
+                const donations = await api.getDonations();
+                const container = document.getElementById('donor-registrations-container');
+
+                if (Array.isArray(donations)) {
+                    // Filter to show only truly available donations:
+                    // 1. Status must be 'pending' (not approved by any hospital)
+                    // 2. Not rejected by current hospital
+                    const currentHospitalId = JSON.parse(localStorage.getItem('user'))._id;
+                    const availableDonations = donations.filter(don => {
+                        // Only show pending donations
+                        if (don.status !== 'pending') return false;
+                        
+                        // Don't show if rejected by current hospital
+                        if (don.rejectedByHospitals && don.rejectedByHospitals.some(r => 
+                            (r.hospitalId._id || r.hospitalId) === currentHospitalId
+                        )) {
+                            return false;
+                        }
+                        
+                        return true;
+                    });
+
+                    if (availableDonations.length === 0) {
+                        container.innerHTML = `<p class="empty-state">No available donors.</p>`;
+                    } else {
+                        container.innerHTML = availableDonations.map(don => `
+                        <div class="donor-item" data-donation-id="${don._id}">
+                            <div class="donor-header">
+                                <h4>${don.type ? don.type.charAt(0).toUpperCase() + don.type.slice(1) : 'Blood'} Donor</h4>
+                                <span class="status-badge status-${don.status.toLowerCase()}">${don.status}</span>
+                            </div>
+                            <p><strong>Donor:</strong> ${don.donorName || 'Unknown'}</p>
+                            <p><strong>Email:</strong> ${don.donorEmail || 'N/A'}</p>
+                            <p><strong>Phone:</strong> ${don.donorPhone || 'N/A'}</p>
+                            ${don.type === 'blood' ? `
+                                ${don.details?.bloodType ? `<p><strong>Blood Group:</strong> ${don.details.bloodType}</p>` : ''}
+                                ${don.details?.bloodUnits ? `<p><strong>Units:</strong> ${don.details.bloodUnits}</p>` : ''}
+                                ${don.details?.healthStatus ? `<p><strong>Health Status:</strong> ${don.details.healthStatus}</p>` : ''}
+                                ${don.details?.weight ? `<p><strong>Weight:</strong> ${don.details.weight} kg</p>` : ''}
+                                ${don.details?.lastDonationDate ? `<p><strong>Last Donation Date:</strong> ${don.details.lastDonationDate}</p>` : ''}
+                                ${don.details?.medications && don.details.medications !== 'None' ? `<p><strong>Current Medications:</strong> ${don.details.medications}</p>` : ''}
+                            ` : ''}
+                            ${don.type === 'medicine' ? `
+                                ${don.details?.medicineName ? `<p><strong>Medicine Name:</strong> ${don.details.medicineName}</p>` : ''}
+                                ${don.details?.medicineType ? `<p><strong>Medicine Type:</strong> ${don.details.medicineType}</p>` : ''}
+                                ${don.details?.quantity ? `<p><strong>Quantity:</strong> ${don.details.quantity}</p>` : ''}
+                                ${don.details?.expiryDate ? `<p><strong>Expiry Date:</strong> ${don.details.expiryDate}</p>` : ''}
+                            ` : ''}
+                            ${don.details?.availability ? `<p><strong>Availability:</strong> ${don.details.availability}</p>` : ''}
+                            ${don.details?.contactPreference ? `<p><strong>Preferred Contact Method:</strong> ${don.details.contactPreference}</p>` : ''}
+                            <p><strong>Registered:</strong> ${new Date(don.createdAt).toLocaleDateString()} at ${new Date(don.createdAt).toLocaleTimeString()}</p>
+
+                            <div class="action-buttons">
+                                <button class="accept-btn" onclick="acceptDonation('${don._id}')" style="padding: 8px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 2px; font-size: 12px;">
+                                    Accept
+                                </button>
+                                <button class="reject-btn" onclick="rejectDonation('${don._id}')" style="padding: 8px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 2px; font-size: 12px;">
+                                    Reject
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                    }
+                } else if (Array.isArray(donations) && donations.length === 0) {
+                    container.innerHTML = `<p class="empty-state">No donor registrations found.</p>`;
+                } else {
+                    throw new Error('Invalid API response');
+                }
+            } catch (error) {
+                document.getElementById('donor-registrations-container').innerHTML = `
+                    <p class="empty-state">Unable to load donor registrations: ${error.message}</p>
+                `;
+            }
+        }
+
+        function formatActionDate(dateString) {
+            const actionDate = new Date(dateString);
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            const actionDateOnly = new Date(actionDate.getFullYear(), actionDate.getMonth(), actionDate.getDate());
+            const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+
+            const timeString = actionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            if (actionDateOnly.getTime() === todayOnly.getTime()) {
+                return `<span style="color: #28a745; font-weight: 600;">Today</span> at ${timeString}`;
+            } else if (actionDateOnly.getTime() === yesterdayOnly.getTime()) {
+                return `<span style="color: #ffc107; font-weight: 600;">Yesterday</span> at ${timeString}`;
+            } else {
+                const daysDiff = Math.floor((todayOnly - actionDateOnly) / (1000 * 60 * 60 * 24));
+                if (daysDiff <= 7 && daysDiff > 1) {
+                    const dayName = actionDate.toLocaleDateString([], { weekday: 'long' });
+                    return `<span style="color: #17a2b8; font-weight: 600;">${dayName}</span> at ${timeString}`;
+                } else {
+                    const dateString = actionDate.toLocaleDateString([], {
+                        month: 'short',
+                        day: 'numeric',
+                        year: actionDate.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
+                    });
+                    return `<span style="color: #6c757d; font-weight: 500;">${dateString}</span> at ${timeString}`;
+                }
+            }
+        }
+
+        async function loadHospitalHistory() {
+            try {
+                let userData = localStorage.getItem('user');
+                if (!userData) {
+                    userData = localStorage.getItem('lifelink_user');
+                }
+                
+                if (!userData) {
+                    document.getElementById('hospital-history-container').innerHTML = 
+                        '<p class="empty-state">Error: User data not found. Please try logging in again.</p>';
+                    return;
+                }
+                
+                const user = JSON.parse(userData);
+                const currentHospitalId = user._id;
+                let allHistoryItems = [];
+                
+                try {
+                    const requestsResponse = await fetch('/api/requests', {
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                    });
+                    
+                    if (requestsResponse.ok) {
+                        const requestsData = await requestsResponse.json();
+                        const requests = requestsData.requests || requestsData;
+                        
+                        requests.forEach((req) => {
+                        let shouldInclude = false;
+                        let displayStatus = req.status;
+                        
+                        const reqHospitalId = req.hospitalId?._id || req.hospitalId;
+                        if (req.status === 'approved' && reqHospitalId === currentHospitalId) {
+                            shouldInclude = true;
+                        }
+                        
+                        if (req.status === 'rejected' && reqHospitalId === currentHospitalId) {
+                            shouldInclude = true;
+                        }
+                        
+                        if (req.rejectedByHospitals && Array.isArray(req.rejectedByHospitals)) {
+                            const rejectedByThis = req.rejectedByHospitals.find(
+                                rejection => {
+                                    const rejectionHospitalId = rejection.hospitalId?._id || rejection.hospitalId;
+                                    return rejectionHospitalId === currentHospitalId;
+                                }
+                            );
+                            if (rejectedByThis) {
+                                shouldInclude = true;
+                                displayStatus = 'rejected'; // Override status for display
+                            }
+                        }
+                        
+                        if (shouldInclude) {
+                            allHistoryItems.push({
+                                ...req,
+                                itemType: 'request',
+                                displayName: req.patientName || 'Unknown Patient',
+                                displayEmail: req.patientEmail || 'No Email',
+                                status: displayStatus
+                            });
+                        }
+                    });
+                    }
+                } catch (error) {
+                    console.error('Error loading requests for history:', error);
+                }
+                
+                try {
+                    const donationsResponse = await fetch('/api/donations', {
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                    });
+                    
+                    if (donationsResponse.ok) {
+                        const donations = await donationsResponse.json();
+                        
+                        donations.forEach((don) => {
+                        let shouldInclude = false;
+                        let displayStatus = don.status;
+                        
+                        const donHospitalId = don.hospitalId?._id || don.hospitalId;
+                        if (don.status === 'approved' && donHospitalId === currentHospitalId) {
+                            shouldInclude = true;
+                        }
+                        
+                        if (don.status === 'rejected' && donHospitalId === currentHospitalId) {
+                            shouldInclude = true;
+                        }
+                        
+                        if (don.rejectedByHospitals && Array.isArray(don.rejectedByHospitals)) {
+                            const rejectedByThis = don.rejectedByHospitals.find(
+                                rejection => {
+                                    const rejectionHospitalId = rejection.hospitalId?._id || rejection.hospitalId;
+                                    return rejectionHospitalId === currentHospitalId;
+                                }
+                            );
+                            if (rejectedByThis) {
+                                shouldInclude = true;
+                                displayStatus = 'rejected'; // Override status for display
+                            }
+                        }
+                        
+                        if (shouldInclude) {
+                            allHistoryItems.push({
+                                ...don,
+                                itemType: 'donation',
+                                displayName: don.donorName || 'Unknown Donor',
+                                displayEmail: don.donorEmail || 'No Email',
+                                status: displayStatus
+                            });
+                        }
+                    });
+                    }
+                } catch (error) {
+                    console.error('Error loading donations for history:', error);
+                }
+                
+                allHistoryItems.sort((a, b) => {
+                    // Sort by most recent activity (responses first, then submissions)
+                    const dateA = new Date(a.updatedAt || a.createdAt);
+                    const dateB = new Date(b.updatedAt || b.createdAt);
+                    return dateB - dateA; // Most recent activity first
+                });
+                
+                const container = document.getElementById('hospital-history-container');
+                if (allHistoryItems.length === 0) {
+                    container.innerHTML = '<p class="empty-state">No history found. Process some requests or donations to see them here.</p>';
+                    return;
+                }
+                
+                container.innerHTML = allHistoryItems.map(item => {
+                    const statusColor = item.status === 'approved' ? '#28a745' : '#dc3545';
+                    return `
+                        <div class="item-card" style="background: linear-gradient(145deg, #111 0%, #1a1a1a 100%); border-radius: 10px; padding: 15px; margin-bottom: 15px; border: 1px solid #333;">
+                            <div class="item-header">
+                                <h4 class="item-title"> ${item.type || 'Blood'} ${item.itemType === 'request' ? 'Request' : 'Donation'}</h4>
+                                <span class="status-badge status-${item.status.toLowerCase()}">${item.status.toUpperCase()}</span>
+                            </div>
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">${item.itemType === 'request' ? 'Patient' : 'Donor'}:</strong> <span style="color: #2980b9; font-weight: 500;">${item.displayName}</span></p>
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Email:</strong> <span style="color: #7f8c8d;">${item.displayEmail}</span></p>
+                            ${item.itemType === 'request' && item.type === 'blood' ? `
+                                ${item.details?.bloodType ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Required Blood Group:</strong> <span style="color: #e74c3c; font-weight: 600;">${item.details.bloodType}</span></p>` : ''}
+                                ${item.details?.bloodUnits ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Units Required:</strong> <span style="color: #8e44ad; font-weight: 500;">${item.details.bloodUnits}</span></p>` : ''}
+                            ` : ''}
+                            ${item.itemType === 'request' && item.type === 'bed' ? `
+                                ${item.details?.bedType ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Type of Bed:</strong> <span style="color: #2980b9; font-weight: 500;">${item.details.bedType}</span></p>` : ''}
+                                ${item.details?.duration ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Expected Duration (days):</strong> <span style="color: #f39c12; font-weight: 500;">${item.details.duration}</span></p>` : ''}
+                            ` : ''}
+                            ${item.itemType === 'request' && item.type === 'medicine' ? `
+                                ${item.details?.medicineName ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Medicine Name:</strong> <span style="color: #27ae60; font-weight: 500;">${item.details.medicineName}</span></p>` : ''}
+                                ${item.details?.medicineType ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Medicine Type:</strong> <span style="color: #16a085; font-weight: 500;">${item.details.medicineType}</span></p>` : ''}
+                                ${item.details?.quantity ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Quantity:</strong> <span style="color: #8e44ad; font-weight: 500;">${item.details.quantity}</span></p>` : ''}
+                            ` : ''}
+                            ${item.itemType === 'request' && item.type === 'doctor' ? `
+                                ${item.details?.doctorSpecialty ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Doctor Specialty:</strong> <span style="color: #2980b9; font-weight: 600;">${item.details.doctorSpecialty}</span></p>` : ''}
+                                ${item.details?.appointmentDate ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Preferred Date:</strong> <span style="color: #f39c12; font-weight: 500;">${item.details.appointmentDate}</span></p>` : ''}
+                            ` : ''}
+                            ${item.itemType === 'donation' && item.type === 'blood' ? `
+                                ${item.details?.bloodType ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Blood Group:</strong> <span style="color: #e74c3c; font-weight: 600;">${item.details.bloodType}</span></p>` : ''}
+                                ${item.details?.weight ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Weight:</strong> <span style="color: #8e44ad; font-weight: 500;">${item.details.weight} kg</span></p>` : ''}
+                                ${item.details?.healthStatus ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Health Status:</strong> <span style="color: #27ae60; font-weight: 500;">${item.details.healthStatus}</span></p>` : ''}
+                                ${item.details?.lastDonationDate ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Last Donation Date:</strong> <span style="color: #f39c12; font-weight: 500;">${item.details.lastDonationDate}</span></p>` : ''}
+                                ${item.details?.medications && item.details.medications !== 'None' ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Current Medications:</strong> <span style="color: #e67e22; font-weight: 500;">${item.details.medications}</span></p>` : ''}
+                            ` : ''}
+                            ${item.itemType === 'donation' && item.type === 'medicine' ? `
+                                ${item.details?.medicineName ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Medicine Name:</strong> <span style="color: #27ae60; font-weight: 600;">${item.details.medicineName}</span></p>` : ''}
+                                ${item.details?.medicineType ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Medicine Type:</strong> <span style="color: #16a085; font-weight: 500;">${item.details.medicineType}</span></p>` : ''}
+                                ${item.details?.quantity ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Quantity:</strong> <span style="color: #8e44ad; font-weight: 500;">${item.details.quantity}</span></p>` : ''}
+                                ${item.details?.expiryDate ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Expiry Date:</strong> <span style="color: #e74c3c; font-weight: 500;">${item.details.expiryDate}</span></p>` : ''}
+                            ` : ''}
+                            ${item.itemType === 'donation' && item.type === 'bed' ? `
+                                ${item.details?.bedType ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Bed Type:</strong> <span style="color: #2980b9; font-weight: 600;">${item.details.bedType}</span></p>` : ''}
+                                ${item.details?.quantity ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Number of Beds:</strong> <span style="color: #8e44ad; font-weight: 500;">${item.details.quantity}</span></p>` : ''}
+                                ${item.details?.location ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Location:</strong> <span style="color: #f39c12; font-weight: 500;">${item.details.location}</span></p>` : ''}
+                            ` : ''}
+                            ${item.details?.urgency ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Urgency Level:</strong> <span style="color: ${item.details.urgency === 'high' || item.details.urgency === 'critical' ? '#e74c3c' : item.details.urgency === 'medium' ? '#f39c12' : '#27ae60'}; font-weight: 600;">${item.details.urgency}</span></p>` : ''}
+                            ${item.details?.availability ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Availability:</strong> <span style="color: #f39c12; font-weight: 500;">${item.details.availability}</span></p>` : ''}
+                            ${item.details?.contactPreference ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Preferred Contact Method:</strong> <span style="color: #16a085; font-weight: 500;">${item.details.contactPreference}</span></p>` : ''}
+                                ${item.status === 'rejected' && item.rejectedByHospitals ? 
+                                    (() => {
+                                        const rejection = item.rejectedByHospitals.find(r => r.hospitalId === currentHospitalId);
+                                        return rejection ? `<p style="margin: 6px 0; color: #ffb3b3;"><strong style="color: #fff;">Rejection Reason:</strong> ${rejection.rejectionReason}</p>` : '';
+                                    })() : 
+                                    (item.rejectionReason ? `<p style="margin: 6px 0; color: #ffb3b3;"><strong style="color: #fff;">Rejection Reason:</strong> ${item.rejectionReason}</p>` : '')
+                                }
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Submitted:</strong> <span style="color: #7f8c8d;">${new Date(item.createdAt).toLocaleDateString()} at ${new Date(item.createdAt).toLocaleTimeString()}</span></p>
+                            ${item.details?.medicalHistory ? `<p><strong>Medical History:</strong> ${item.details.medicalHistory.substring(0, 100)}${item.details.medicalHistory.length > 100 ? '...' : ''}</p>` : ''}
+
+                            <p style="font-size: 12px; color: #95a5a6; margin-top: 12px; padding-top: 8px; border-top: 1px solid #ecf0f1;"><strong style="color: #7f8c8d;">${item.itemType === 'request' ? 'Request' : 'Donation'} ID:</strong> <span style="font-family: monospace; color: #6c757d;">${item._id}</span></p>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                document.getElementById('hospital-history-container').innerHTML = 
+                    `<p class="empty-state">Error loading history: ${error.message}</p>`;
+            }
+        }
+
+        function updateStatistics() {
+            try {
+                const availableRequests = document.querySelectorAll('#patient-requests-container .request-item').length;
+                const availableDonors = document.querySelectorAll('#donor-registrations-container .donor-item').length;
+
+                document.getElementById('pending-requests').textContent = availableRequests;
+                document.getElementById('available-donors').textContent = availableDonors;
+            } catch (error) {
+                // Error updating statistics
+            }
+        }
+
+        async function updateRequestStatus(requestId, status) {
+            try {
+                let rejectionReason = null;
+                
+                if (status === 'rejected') {
+                    rejectionReason = prompt('Please provide a reason for rejection:');
+                    if (!rejectionReason || rejectionReason.trim() === '') {
+                        return; // User cancelled or didn't provide reason
+                    }
+                    
+                    if (!confirm(`Are you sure you want to reject this request?\n\nReason: ${rejectionReason.trim()}`)) {
+                        return;
+                    }
+                } else if (status === 'approved') {
+                    if (!confirm('Are you sure you want to accept this request?')) {
+                        return;
+                    }
+                }
+
+                console.log('Updating request status:', requestId, status, rejectionReason);
+
+                const requestBody = { status: status };
+                if (rejectionReason) {
+                    requestBody.rejectionReason = rejectionReason.trim();
+                }
+
+                const response = await fetch(`/api/requests/${requestId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const result = await response.json();
+                console.log('Update response:', result);
+                
+                if (response.ok && result.success) {
+                    showAlert(`Request ${status} successfully!`, 'success');
+                    
+                    const requestElement = document.querySelector(`[data-request-id="${requestId}"]`);
+                    if (requestElement) {
+                        requestElement.style.transition = 'opacity 0.3s ease-out';
+                        requestElement.style.opacity = '0.5';
+                        requestElement.innerHTML = `<p style="text-align: center; color: ${status === 'approved' ? '#28a745' : '#dc3545'}; padding: 20px;">${status === 'approved' ? 'Accepted' : 'Rejected'} - Moving to History...</p>`;
+                    }
+                    
+                    // Immediate refresh without delay
+                    await loadPatientRequests();
+                    await loadHospitalHistory();
+                    updateStatistics();
+                    
+                    // Also trigger a delayed refresh to ensure all data is updated
+                    setTimeout(async () => {
+                        await loadPatientRequests();
+                        await loadHospitalHistory();
+                        updateStatistics();
+                    }, 1000);
+                } else {
+                    throw new Error(result.error || 'Failed to update request status');
+                }
+            } catch (error) {
+                console.error('Update request status error:', error);
+                showAlert(`Failed to update request status: ${error.message}`, 'error');
+            }
+        }
+
+        function getUrgencyIcon(urgency) {
+            const icons = {
+                low: '',
+                medium: '',
+                high: '',
+                critical: ''
+            };
+            return icons[urgency] || '';
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alert-container');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            container.appendChild(alert);
+            
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (checkAuth()) {
+                loadAllData();
+                // Refresh every 5 seconds to immediately show updates
+                setInterval(loadAllData, 5000);
+            }
+        });
+    </script>
+</body>
+</html>

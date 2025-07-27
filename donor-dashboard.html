@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donor Dashboard - LifeLink</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-content">
+            <span id="donor-name">Welcome, Donor</span>
+            <button class="logout-btn" onclick="logout()" style="margin-left: auto;">Logout</button>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <div id="alert-container"></div>
+
+        <div class="dashboard-grid">
+            <!-- Donation Registration Form -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">Register Donation</h2>
+                </div>
+                
+                <form id="donor-form">
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="donation-type">What do you want to donate?</label>
+                        <select id="donation-type" required onchange="showDonationFields()">
+                            <option value="">Select donation type</option>
+                            <option value="blood">Blood</option>
+                            <option value="medicine">Medicine</option>
+                        </select>
+                    </div>
+
+                    <!-- Blood Donation Fields -->
+                    <div id="blood-fields" class="donation-fields" style="display: none;">
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label for="donor-blood-group">Your Blood Group</label>
+                            <select id="donor-blood-group">
+                                <option value="">Select your blood group</option>
+                                <option value="A+">A+ (A Positive)</option>
+                                <option value="A-">A- (A Negative)</option>
+                                <option value="B+">B+ (B Positive)</option>
+                                <option value="B-">B- (B Negative)</option>
+                                <option value="AB+">AB+ (AB Positive)</option>
+                                <option value="AB-">AB- (AB Negative)</option>
+                                <option value="O+">O+ (O Positive)</option>
+                                <option value="O-">O- (O Negative)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label>
+                                <input type="checkbox" id="first-time-donor" onchange="toggleLastDonationField()" style="margin-right: 8px;">
+                                First-time donor
+                            </label>
+                        </div>
+
+                        <div class="form-group" id="last-donation-group" style="margin-bottom: 20px;">
+                            <label for="last-donation">Last Donation Date</label>
+                            <input type="date" id="last-donation">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label for="weight">Weight (kg)</label>
+                            <input type="number" id="weight" min="45" max="200" 
+                                   placeholder="Minimum 45kg required for donation">
+                        </div>
+                    </div>
+
+                    <!-- Medicine Donation Fields -->
+                    <div id="medicine-fields" class="donation-fields" style="display: none;">
+                        <div class="form-group">
+                            <label for="medicine-name">Medicine Name</label>
+                            <input type="text" id="medicine-name" placeholder="Enter medicine name">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="medicine-type">Medicine Type</label>
+                            <select id="medicine-type">
+                                <option value="">Select medicine type</option>
+                                <option value="tablet">Tablet</option>
+                                <option value="capsule">Capsule</option>
+                                <option value="syrup">Syrup</option>
+                                <option value="injection">Injection</option>
+                                <option value="cream">Cream/Ointment</option>
+                                <option value="drops">Drops</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="medicine-quantity">Quantity</label>
+                            <input type="number" id="medicine-quantity" min="1" value="1">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="expiry-date">Expiry Date</label>
+                            <input type="date" id="expiry-date">
+                        </div>
+                    </div>
+
+                    <!-- Bed Donation Fields -->
+                    <div id="bed-fields" class="donation-fields" style="display: none;">
+                        <div class="form-group">
+                            <label for="bed-type">Bed Type</label>
+                            <select id="bed-type">
+                                <option value="">Select bed type</option>
+                                <option value="general">General Ward</option>
+                                <option value="icu">Intensive Care Unit (ICU)</option>
+                                <option value="emergency">Emergency</option>
+                                <option value="maternity">Maternity</option>
+                                <option value="pediatric">Pediatric</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="bed-quantity">Number of Beds</label>
+                            <input type="number" id="bed-quantity" min="1" value="1">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="bed-location">Location</label>
+                            <input type="text" id="bed-location" placeholder="Where are the beds located?">
+                        </div>
+                    </div>
+
+                    <!-- Blood-specific Health Fields -->
+                    <div id="health-fields" class="donation-fields" style="display: none;">
+                        <div class="form-group">
+                            <label for="health-status">Current Health Status</label>
+                            <select id="health-status">
+                                <option value="">Select your health status</option>
+                                <option value="excellent">Excellent - No health issues</option>
+                                <option value="good">Good - Minor issues, cleared by doctor</option>
+                                <option value="fair">Fair - Some health concerns</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="medications">Current Medications (if any)</label>
+                            <textarea id="medications" rows="3" 
+                                    placeholder="List any medications you are currently taking..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Common Fields for All Donation Types -->
+                    <div id="common-fields" class="donation-fields" style="display: none;">
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label for="donor-address">Your Address</label>
+                            <textarea id="donor-address" rows="2" placeholder="Enter your full address"></textarea>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label for="availability">Availability</label>
+                            <select id="availability">
+                                <option value="">When can you donate?</option>
+                                <option value="immediately">Immediately Available</option>
+                                <option value="within-week">Within a Week</option>
+                                <option value="within-month">Within a Month</option>
+                                <option value="emergency-only">Emergency Only</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label for="contact-preference">Preferred Contact Method</label>
+                            <select id="contact-preference" onchange="showContactField()">
+                                <option value="">How should hospitals contact you?</option>
+                                <option value="phone">Phone Call</option>
+                                <option value="sms">SMS/Text Message</option>
+                                <option value="email">Email</option>
+                                <option value="any">Any Method</option>
+                            </select>
+                        </div>
+
+                        <div id="contact-details-field" class="form-group" style="margin-bottom: 30px; display: none;">
+                            <label id="contact-details-label" for="contact-details">Contact Details</label>
+                            <input type="text" id="contact-details" placeholder="Enter your contact details">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn" style="margin-top: 20px;">Register as Donor</button>
+                </form>
+            </div>
+
+            <!-- Donation History -->
+            <div class="dashboard-card" style="min-height: 400px;">
+                <div class="card-header">
+                    <h2 class="card-title"> Donation History</h2>
+                </div>
+                <div id="donation-history-container" style="max-height: 500px; overflow-y: auto;">
+                    <p class="empty-state">
+                        No donations yet. Register your first donation!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        // Function to toggle last donation date field based on first-time donor checkbox
+        function toggleLastDonationField() {
+            const firstTimeDonor = document.getElementById('first-time-donor').checked;
+            const lastDonationGroup = document.getElementById('last-donation-group');
+            const lastDonationInput = document.getElementById('last-donation');
+            
+            if (firstTimeDonor) {
+                lastDonationGroup.style.display = 'none';
+                lastDonationInput.value = ''; // Clear the value
+                lastDonationInput.removeAttribute('required');
+            } else {
+                lastDonationGroup.style.display = 'block';
+                lastDonationInput.setAttribute('required', 'required');
+            }
+        }
+
+        // Function to show relevant fields based on donation type
+        function showDonationFields() {
+            const donationType = document.getElementById('donation-type').value;
+            const fieldSets = document.querySelectorAll('.donation-fields');
+            
+            // Hide all field sets first
+            fieldSets.forEach(fieldSet => {
+                fieldSet.style.display = 'none';
+            });
+            
+            // Show common fields for all donation types
+            if (donationType) {
+                document.getElementById('common-fields').style.display = 'block';
+            }
+            
+            // Show specific fields based on donation type
+            if (donationType === 'blood') {
+                document.getElementById('blood-fields').style.display = 'block';
+                document.getElementById('health-fields').style.display = 'block';
+            } else if (donationType === 'medicine') {
+                document.getElementById('medicine-fields').style.display = 'block';
+            }
+        }
+        
+        // Function to show contact details field based on contact preference
+        function showContactField() {
+            const contactPreference = document.getElementById('contact-preference').value;
+            const contactDetailsField = document.getElementById('contact-details-field');
+            const contactDetailsLabel = document.getElementById('contact-details-label');
+            const contactDetailsInput = document.getElementById('contact-details');
+            
+            if (!contactPreference || contactPreference === 'any') {
+                contactDetailsField.style.display = 'none';
+                return;
+            }
+            
+            contactDetailsField.style.display = 'block';
+            
+            // Update label and placeholder based on selection
+            if (contactPreference === 'phone' || contactPreference === 'sms') {
+                contactDetailsLabel.textContent = 'Phone Number';
+                contactDetailsInput.placeholder = 'Enter your phone number';
+                contactDetailsInput.type = 'tel';
+            } else if (contactPreference === 'email') {
+                contactDetailsLabel.textContent = 'Email Address';
+                contactDetailsInput.placeholder = 'Enter your email address';
+                contactDetailsInput.type = 'email';
+            }
+        }
+        
+        // Authentication check
+        function checkAuth() {
+            const userType = localStorage.getItem('userType');
+            const token = localStorage.getItem('token');
+            
+            if (!token || userType !== 'donor') {
+                alert('Please login as a donor first');
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            // Update donor name
+            const userData = localStorage.getItem('user') || localStorage.getItem('lifelink_user');
+            if (userData) {
+                try {
+                    const user = JSON.parse(userData);
+                    const name = user.profile?.name || user.data?.['donor-name'] || user.name || 'Donor';
+                    document.getElementById('donor-name').textContent = `Welcome, ${name}`;
+                } catch (e) {
+                    console.log('Could not parse user data');
+                }
+            }
+            
+            return true;
+        }
+
+        // Delete donation function
+        async function deleteDonation(donationId) {
+            if (!confirm('️ Are you sure you want to delete this donation?\n\nThis action cannot be undone and will remove the donation from all dashboards.')) {
+                return;
+            }
+
+            try {
+                console.log('️ Deleting donation:', donationId);
+
+                const result = await api.request(`/donations/${donationId}`, {
+                    method: 'DELETE'
+                });
+                console.log(' Delete response:', result);
+
+                if (result.success) {
+                    showAlert(' Donation deleted successfully!', 'success');
+                    console.log(' Donation deleted from database');
+
+                    // Remove from localStorage as well
+                    let donations = JSON.parse(localStorage.getItem('donorRegistrations') || '[]');
+                    donations = donations.filter(don => don.id !== donationId);
+                    localStorage.setItem('donorRegistrations', JSON.stringify(donations));
+
+                    // Reload history to reflect changes
+                    loadDonationHistory();
+                } else {
+                    throw new Error(result.error || 'Failed to delete donation');
+                }
+
+            } catch (error) {
+                console.error(' Delete donation error:', error);
+                showAlert(`Failed to delete donation: ${error.message}`, 'error');
+            }
+        }
+
+        // Test API function for debugging
+        async function testAPI() {
+            console.log(' Testing donations API...');
+
+            const token = localStorage.getItem('token');
+            const userType = localStorage.getItem('userType');
+            const user = localStorage.getItem('user');
+
+            console.log(' Auth info:', {
+                token: token ? 'Present' : 'Missing',
+                userType,
+                user: user ? JSON.parse(user) : null
+            });
+
+            try {
+                console.log(' Testing /api/donations...');
+                const data = await api.getDonations();
+                console.log(' Response data:', data);
+
+                showAlert(` API Test Success! Found ${Array.isArray(data) ? data.length : 'unknown'} donations`, 'success');
+
+            } catch (error) {
+                console.error(' API Test Error:', error);
+                showAlert(` API Test Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            if (checkAuth()) {
+
+                // Load history immediately
+                loadDonationHistory();
+
+                // Auto-refresh history every 5 seconds to catch hospital responses
+                setInterval(loadDonationHistory, 5000);
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('donor-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+
+            const donationType = document.getElementById('donation-type').value;
+            const donorAddress = document.getElementById('donor-address')?.value || '';
+            const availability = document.getElementById('availability')?.value || '';
+            const contactPreference = document.getElementById('contact-preference')?.value || '';
+            const contactDetails = document.getElementById('contact-details')?.value || '';
+
+            if (!donationType) {
+                showAlert('Please select what you want to donate', 'error');
+                return;
+            }
+            
+            if (!donorAddress.trim()) {
+                showAlert('Please enter your address', 'error');
+                return;
+            }
+
+            try {
+                // Get donor information
+                const userData = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : {};
+                const donorName = userData.profile?.name || userData.data?.['donor-name'] || 'Unknown';
+                const donorEmail = userData.email || '';
+                const donorPhone = userData.profile?.phone || userData.data?.['donor-phone'] || '';
+
+                // Prepare donation data for API
+                const donationData = {
+                    type: donationType,
+                    donorName: donorName,
+                    donorEmail: donorEmail,
+                    donorPhone: donorPhone,
+                    details: {
+                        address: donorAddress.trim(),
+                        availability: availability,
+                        contactPreference: contactPreference,
+                        contactDetails: contactDetails
+                    }
+                };
+
+                // Add type-specific details
+                if (donationType === 'blood') {
+                    const bloodGroup = document.getElementById('donor-blood-group').value;
+                    const firstTimeDonor = document.getElementById('first-time-donor').checked;
+                    const lastDonation = firstTimeDonor ? null : document.getElementById('last-donation').value;
+                    const weight = document.getElementById('weight').value;
+                    const healthStatus = document.getElementById('health-status')?.value || '';
+                    const medications = document.getElementById('medications')?.value || '';
+                    
+                    if (!bloodGroup || (!firstTimeDonor && !lastDonation) || !weight || !healthStatus) {
+                        showAlert('Please fill in all required blood donation fields', 'error');
+                        return;
+                    }
+                    
+                    // Check weight requirement
+                    if (parseInt(weight) < 45) {
+                        showAlert('Minimum weight of 45kg is required for blood donation', 'error');
+                        return;
+                    }
+                    
+                    // Check last donation date only for non-first-time donors
+                    if (!firstTimeDonor && lastDonation) {
+                        const lastDonationDate = new Date(lastDonation);
+                        const today = new Date();
+                        const daysDiff = Math.floor((today - lastDonationDate) / (1000 * 60 * 60 * 24));
+                        
+                        if (daysDiff < 56) {
+                            // Show warning but allow submission for testing purposes
+                            const proceed = confirm(`Warning: Only ${daysDiff} days since last donation. Medical guidelines recommend 56 days. Continue anyway?`);
+                            if (!proceed) {
+                                showAlert('Donation cancelled. Please wait until 56 days have passed.', 'error');
+                                return;
+                            }
+                        }
+                    }
+                    
+                    donationData.details.bloodType = bloodGroup;
+                    donationData.details.bloodUnits = 1;
+                    donationData.details.lastDonationDate = firstTimeDonor ? 'First-time donor' : lastDonation;
+                    donationData.details.weight = parseInt(weight);
+                    donationData.details.healthStatus = healthStatus;
+                    donationData.details.medications = medications.trim() || 'None';
+                    donationData.details.location = 'Blood Bank';
+                }
+                else if (donationType === 'medicine') {
+                    const medicineName = document.getElementById('medicine-name').value;
+                    const medicineType = document.getElementById('medicine-type').value;
+                    const medicineQuantity = document.getElementById('medicine-quantity').value;
+                    const expiryDate = document.getElementById('expiry-date').value;
+                    
+                    if (!medicineName || !medicineType || !medicineQuantity) {
+                        showAlert('Please fill in all medicine donation fields', 'error');
+                        return;
+                    }
+                    
+                    donationData.details.medicineName = medicineName;
+                    donationData.details.medicineType = medicineType;
+                    donationData.details.quantity = parseInt(medicineQuantity);
+                    if (expiryDate) {
+                        donationData.details.expiryDate = expiryDate;
+                    }
+                }
+
+                // Submit to database via API
+                const result = await api.createDonation(donationData);
+
+                if (result) {
+
+                    // Reset form
+                    this.reset();
+                    document.querySelectorAll('.donation-fields').forEach(field => {
+                        field.style.display = 'none';
+                    });
+
+                    showAlert(`Your ${donationType} donation has been registered successfully! You are now available for matching.`, 'success');
+
+                    // Reload history
+                    loadDonationHistory();
+                } else {
+                    throw new Error(result?.error || 'Failed to register donation');
+                }
+
+            } catch (error) {
+                console.error('Registration error:', error);
+                showAlert(`Failed to register donation: ${error.message}`, 'error');
+            }
+        });
+
+        // Load donation history from database
+        async function loadDonationHistory() {
+
+            try {
+                const token = localStorage.getItem('token');
+                const userType = localStorage.getItem('userType');
+                console.log('Debug - Token exists:', !!token);
+                console.log('Debug - User type:', userType);
+                
+                if (!token) {
+                    return;
+                }
+
+                const response = await fetch('/api/donations', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                console.log('Debug - Response status:', response.status);
+                const donations = await response.json();
+                console.log('Debug - API result:', donations);
+
+                const container = document.getElementById('donation-history-container');
+
+                if (!container) {
+                    return;
+                }
+
+                if (response.ok && Array.isArray(donations) && donations.length > 0) {
+                    // Sort donations by most recent activity (responses first, then submissions)
+                    donations.sort((a, b) => {
+                        // Prioritize items with hospital responses (updatedAt)
+                        const dateA = new Date(a.updatedAt || a.createdAt);
+                        const dateB = new Date(b.updatedAt || b.createdAt);
+                        return dateB - dateA;
+                    });
+
+                    const historyHTML = donations.map((don, index) => {
+                        // Determine hospital information based on status
+                        let hospitalInfo = '';
+                        let statusInfo = '';
+
+                        if (don.status === 'approved' && don.hospitalName) {
+                            hospitalInfo = `<p><strong> Approved by:</strong> ${don.hospitalName}</p>`;
+                            statusInfo = `<p><strong>Action Date:</strong> ${new Date(don.updatedAt || don.createdAt).toLocaleDateString()} at ${new Date(don.updatedAt || don.createdAt).toLocaleTimeString()}</p>`;
+                        } else if (don.status === 'rejected') {
+                            // Legacy rejection format
+                            if (don.hospitalName) {
+                                hospitalInfo = `<p><strong> Rejected by:</strong> ${don.hospitalName}</p>`;
+                                if (don.rejectionReason) {
+                                    hospitalInfo += `<p><strong>Rejection Reason:</strong> ${don.rejectionReason}</p>`;
+                                }
+                                statusInfo = `<p><strong>Action Date:</strong> ${new Date(don.updatedAt || don.createdAt).toLocaleDateString()} at ${new Date(don.updatedAt || don.createdAt).toLocaleTimeString()}</p>`;
+                            }
+                        } else if (don.status === 'pending') {
+                            // Check for rejections in rejectedByHospitals array
+                            if (don.rejectedByHospitals && don.rejectedByHospitals.length > 0) {
+                                const rejections = don.rejectedByHospitals.map(rejection => `
+                                    <div style="margin: 5px 0; padding: 8px; background: #f8d7da; border-radius: 4px; border-left: 3px solid #dc3545;">
+                                        <strong> Rejected by:</strong> ${rejection.hospitalName}<br>
+                                        <strong>Reason:</strong> ${rejection.rejectionReason}<br>
+                                        <strong>Date:</strong> ${new Date(rejection.rejectedAt).toLocaleDateString()} at ${new Date(rejection.rejectedAt).toLocaleTimeString()}
+                                    </div>
+                                `).join('');
+                                hospitalInfo = rejections;
+                                statusInfo = `<p><strong>Status:</strong> Rejected by ${don.rejectedByHospitals.length} hospital(s), still available for others</p>`;
+                            } else {
+                                statusInfo = `<p><strong>Status:</strong> Waiting for hospital review</p>`;
+                            }
+                        }
+
+                        return `
+                        <div class="item-card" style="background: linear-gradient(145deg, #111 0%, #1a1a1a 100%); border-radius: 10px; padding: 15px; margin-bottom: 15px; border: 1px solid #333;">
+                            <div class="item-header">
+                                <h4 class="item-title"> ${don.type ? don.type.charAt(0).toUpperCase() + don.type.slice(1) : 'Blood'} Donation</h4>
+                                <span class="status-badge status-${don.status ? don.status.toLowerCase() : 'pending'}">${(don.status || 'Pending').toUpperCase()}</span>
+                            </div>
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Donor:</strong> <span style="color: #2980b9; font-weight: 500;">${don.donorName || 'You'}</span></p>
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Email:</strong> <span style="color: #7f8c8d;">${don.donorEmail || 'N/A'}</span></p>
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Phone:</strong> <span style="color: #7f8c8d;">${don.donorPhone || 'N/A'}</span></p>
+                            ${don.type === 'blood' ? `
+                                ${don.details?.bloodType ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Blood Group:</strong> <span style="color: #e74c3c; font-weight: 600;">${don.details.bloodType}</span></p>` : ''}
+                                ${don.details?.bloodUnits ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Units:</strong> <span style="color: #8e44ad; font-weight: 500;">${don.details.bloodUnits}</span></p>` : ''}
+                                ${don.details?.healthStatus ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Health Status:</strong> <span style="color: #27ae60; font-weight: 500;">${don.details.healthStatus}</span></p>` : ''}
+                                ${don.details?.weight ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Weight:</strong> <span style="color: #8e44ad; font-weight: 500;">${don.details.weight} kg</span></p>` : ''}
+                                ${don.details?.lastDonationDate ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Last Donation Date:</strong> <span style="color: #f39c12; font-weight: 500;">${don.details.lastDonationDate}</span></p>` : ''}
+                                ${don.details?.medications && don.details.medications !== 'None' ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Current Medications:</strong> <span style="color: #e67e22; font-weight: 500;">${don.details.medications}</span></p>` : ''}
+                            ` : ''}
+                            ${don.type === 'medicine' ? `
+                                ${don.details?.medicineName ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Medicine Name:</strong> <span style="color: #27ae60; font-weight: 600;">${don.details.medicineName}</span></p>` : ''}
+                                ${don.details?.medicineType ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Medicine Type:</strong> <span style="color: #16a085; font-weight: 500;">${don.details.medicineType}</span></p>` : ''}
+                                ${don.details?.quantity ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Quantity:</strong> <span style="color: #8e44ad; font-weight: 500;">${don.details.quantity}</span></p>` : ''}
+                                ${don.details?.expiryDate ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Expiry Date:</strong> <span style="color: #e74c3c; font-weight: 500;">${don.details.expiryDate}</span></p>` : ''}
+                            ` : ''}
+                            ${don.details?.availability ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Availability:</strong> <span style="color: #f39c12; font-weight: 500;">${don.details.availability}</span></p>` : ''}
+                            ${don.details?.contactPreference ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Preferred Contact Method:</strong> <span style="color: #16a085; font-weight: 500;">${don.details.contactPreference}</span></p>` : ''}
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Registered:</strong> <span style="color: #7f8c8d;">${new Date(don.createdAt).toLocaleDateString()} at ${new Date(don.createdAt).toLocaleTimeString()}</span></p>
+
+                            ${hospitalInfo}
+                            ${statusInfo}
+
+                            <p style="font-size: 12px; color: #95a5a6; margin-top: 12px; padding-top: 8px; border-top: 1px solid #ecf0f1;"><strong style="color: #7f8c8d;">Donation ID:</strong> <span style="font-family: monospace; color: #6c757d;">${don._id}</span></p>
+
+                            <div class="action-buttons" style="margin-top: 10px;">
+                                ${don.status === 'pending' || don.status === 'available' ? `
+                                    <button class="delete-btn" onclick="deleteDonation('${don._id}')" style="padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">
+                                        Delete Donation
+                                    </button>
+                                ` : `
+                                    <span style="color: #666; font-size: 12px;">Cannot delete ${don.status} donation</span>
+                                `}
+                            </div>
+                        </div>
+                        `;
+                    }).join('');
+
+                    container.innerHTML = historyHTML;
+                } else if (response.ok && Array.isArray(donations) && donations.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #ccc; padding: 20px;">No donations yet. Register your first donation!</p>';
+                } else {
+                    throw new Error(`API returned status ${response.status}`);
+                }
+
+            } catch (error) {
+                console.error('Load donation history error:', error);
+                // Fallback to localStorage if API fails
+                const donations = JSON.parse(localStorage.getItem('donorRegistrations') || '[]');
+                const container = document.getElementById('donation-history-container');
+
+                if (donations.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #ccc; padding: 20px;">No donations yet. Register your first donation!</p>';
+                    return;
+                }
+
+                const historyHTML = donations.map((don, index) => `
+                    <div class="history-item" style="background: linear-gradient(145deg, #111 0%, #1a1a1a 100%); border-radius: 10px; padding: 15px; margin-bottom: 15px; border: 1px solid #333; animation: fadeIn 0.3s ease-in-out;">
+                        <div class="item-header">
+                            <h4 class="item-title"> Blood Donation #${donations.length - index}</h4>
+                            <span class="status-badge status-${don.status.toLowerCase()}">${don.status}</span>
+                        </div>
+                        <p><strong>Blood Group:</strong> ${don.bloodGroup}</p>
+                        <p><strong>Weight:</strong> ${don.weight} kg</p>
+                        <p><strong>Health Status:</strong> ${don.healthStatus}</p>
+                        <p><strong>Availability:</strong> ${don.availability}</p>
+                        <p><strong>Contact:</strong> ${don.contactPreference}</p>
+                        <p><strong>Registered:</strong> ${don.registrationDate} at ${don.registrationTime}</p>
+                        ${don.medications && don.medications !== 'None' ? `<p><strong>Medications:</strong> ${don.medications}</p>` : ''}
+                        <p><strong>Last Donation:</strong> ${don.lastDonation}</p>
+                    </div>
+                `).join('');
+
+                container.innerHTML = historyHTML;
+            }
+        }
+
+        // Show alert
+        function showAlert(message, type) {
+            const container = document.getElementById('alert-container');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            container.appendChild(alert);
+            
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+        // Logout
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

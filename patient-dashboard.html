@@ -1,0 +1,566 @@
+<!-- Lifelink - Patient Dashboard -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard - LifeLink</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-content">
+            <span id="patient-name">Welcome, Patient</span>
+            <button class="logout-btn" onclick="logout()" style="margin-left: auto;">Logout</button>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <div id="alert-container"></div>
+
+        <div class="dashboard-grid">
+            <!-- Submit Request Form -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">Submit Medical Request</h2>
+                </div>
+                <form id="patient-form" class="patient-form">
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="request-type">What do you want to request?</label>
+                        <select id="request-type" required onchange="showRelevantFields()">
+                            <option value="">Select request type</option>
+                            <option value="blood">Blood</option>
+                            <option value="bed">Hospital Bed</option>
+                            <option value="medicine">Medicines</option>
+                            <option value="doctor">Doctor</option>
+                        </select>
+                    </div>
+
+                    <!-- Blood Request Fields -->
+                    <div id="blood-fields" class="request-fields" style="display: none;">
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label for="blood-group">Required Blood Group</label>
+                            <select id="blood-group">
+                                <option value="">Select blood group</option>
+                                <option value="A+">A+ (A Positive)</option>
+                                <option value="A-">A- (A Negative)</option>
+                                <option value="B+">B+ (B Positive)</option>
+                                <option value="B-">B- (B Negative)</option>
+                                <option value="AB+">AB+ (AB Positive)</option>
+                                <option value="AB-">AB- (AB Negative)</option>
+                                <option value="O+">O+ (O Positive)</option>
+                                <option value="O-">O- (O Negative)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label for="blood-units">Units Required</label>
+                            <input type="number" id="blood-units" min="1" value="1">
+                        </div>
+                    </div>
+
+                    <!-- Bed Request Fields -->
+                    <div id="bed-fields" class="request-fields" style="display: none;">
+                        <div class="form-group">
+                            <label for="bed-type">Type of Bed</label>
+                            <select id="bed-type">
+                                <option value="">Select bed type</option>
+                                <option value="general">General Ward</option>
+                                <option value="icu">Intensive Care Unit (ICU)</option>
+                                <option value="emergency">Emergency</option>
+                                <option value="maternity">Maternity</option>
+                                <option value="pediatric">Pediatric</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="bed-duration">Expected Duration (days)</label>
+                            <input type="number" id="bed-duration" min="1" value="1">
+                        </div>
+                    </div>
+
+                    <!-- Medicine Request Fields -->
+                    <div id="medicine-fields" class="request-fields" style="display: none;">
+                        <div class="form-group">
+                            <label for="medicine-name">Medicine Name</label>
+                            <input type="text" id="medicine-name" placeholder="Enter medicine name">
+                        </div>
+                        <div class="form-group">
+                            <label for="medicine-type">Medicine Type</label>
+                            <select id="medicine-type">
+                                <option value="">Select medicine type</option>
+                                <option value="tablet">Tablet</option>
+                                <option value="capsule">Capsule</option>
+                                <option value="syrup">Syrup</option>
+                                <option value="injection">Injection</option>
+                                <option value="cream">Cream/Ointment</option>
+                                <option value="drops">Drops</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="medicine-quantity">Quantity</label>
+                            <input type="number" id="medicine-quantity" min="1" value="1">
+                        </div>
+                    </div>
+
+                    <!-- Doctor Request Fields -->
+                    <div id="doctor-fields" class="request-fields" style="display: none;">
+                        <div class="form-group">
+                            <label for="doctor-specialty">Doctor Specialty</label>
+                            <select id="doctor-specialty">
+                                <option value="">Select specialty</option>
+                                <option value="general">General Physician</option>
+                                <option value="cardiology">Cardiology</option>
+                                <option value="neurology">Neurology</option>
+                                <option value="orthopedic">Orthopedic</option>
+                                <option value="pediatric">Pediatric</option>
+                                <option value="emergency">Emergency Medicine</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="appointment-date">Preferred Date</label>
+                            <input type="date" id="appointment-date">
+                        </div>
+                    </div>
+
+                    <!-- Common Fields for All Request Types -->
+                    <div id="common-fields" class="request-fields" style="display: none;">
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label>Urgency Level</label>
+                            <div class="urgency-buttons">
+                                <button type="button" class="urgency-btn" data-urgency="low">Low</button>
+                                <button type="button" class="urgency-btn" data-urgency="medium">Medium</button>
+                                <button type="button" class="urgency-btn" data-urgency="high">High</button>
+                                <button type="button" class="urgency-btn" data-urgency="critical">Critical</button>
+                            </div>
+                            <input type="hidden" id="urgency-level">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label for="medical-history">Medical History</label>
+                            <textarea id="medical-history" rows="4" placeholder="Describe your medical condition, symptoms, and why you need this request..."></textarea>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 30px;">
+                            <label for="additional-notes">Additional Notes (Optional)</label>
+                            <textarea id="additional-notes" rows="2" placeholder="Any additional information that might help..."></textarea>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn" style="margin-top: 20px;">Submit Request</button>
+                </form>
+            </div>
+
+            <!-- Request History -->
+            <div class="dashboard-card" style="min-height: 400px;">
+                <div class="card-header">
+                    <h2 class="card-title">Request History</h2>
+                </div>
+                <div id="history-container" style="max-height: 500px; overflow-y: auto;">
+                    <p class="empty-state">
+                        No requests yet. Submit your first request!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        // Authentication check
+        function checkAuth() {
+            const userType = localStorage.getItem('userType');
+            const token = localStorage.getItem('token');
+            if (!token || userType !== 'patient') {
+                alert('Please login as a patient first');
+                window.location.href = 'login.html';
+                return false;
+            }
+            const userData = localStorage.getItem('user') || localStorage.getItem('lifelink_user');
+            if (userData) {
+                try {
+                    const user = JSON.parse(userData);
+                    const name = user.profile?.name || user.data?.['patient-name'] || user.name || 'Patient';
+                    document.getElementById('patient-name').textContent = `Welcome, ${name}`;
+                } catch (e) {
+                    console.log('Could not parse user data');
+                }
+            }
+            return true;
+        }
+
+        // Delete request function
+        async function deleteRequest(requestId) {
+            if (!confirm('️ Are you sure you want to delete this request?\n\nThis action cannot be undone and will remove the request from all dashboards.')) {
+                return;
+            }
+
+            try {
+                console.log('️ Deleting request:', requestId);
+
+                const response = await fetch(`/api/requests/${requestId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                const result = await response.json();
+                console.log(' Delete response:', result);
+
+                if (response.ok && result.success) {
+                    showAlert(' Request deleted successfully!', 'success');
+                    console.log(' Request deleted from database');
+
+                    // Remove from localStorage as well
+                    let requests = JSON.parse(localStorage.getItem('patientRequests') || '[]');
+                    requests = requests.filter(req => req.id !== requestId);
+                    localStorage.setItem('patientRequests', JSON.stringify(requests));
+
+                    // Reload history to reflect changes
+                    loadRequestHistory();
+                } else {
+                    throw new Error(result.error || 'Failed to delete request');
+                }
+
+            } catch (error) {
+                console.error(' Delete request error:', error);
+                showAlert(`Failed to delete request: ${error.message}`, 'error');
+            }
+        }
+
+        // Function to show relevant fields based on request type
+        function showRelevantFields() {
+            const requestType = document.getElementById('request-type').value;
+            const fieldSets = document.querySelectorAll('.request-fields');
+            
+            // Hide all field sets first
+            fieldSets.forEach(fieldSet => {
+                fieldSet.style.display = 'none';
+            });
+            
+            // Show common fields for all request types
+            if (requestType) {
+                document.getElementById('common-fields').style.display = 'block';
+            }
+            
+            // Show specific fields based on request type
+            if (requestType === 'blood') {
+                document.getElementById('blood-fields').style.display = 'block';
+            } else if (requestType === 'bed') {
+                document.getElementById('bed-fields').style.display = 'block';
+            } else if (requestType === 'medicine') {
+                document.getElementById('medicine-fields').style.display = 'block';
+            } else if (requestType === 'doctor') {
+                document.getElementById('doctor-fields').style.display = 'block';
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            loadRequestHistory();
+            
+            // Auto-refresh history every 5 seconds to catch hospital responses
+            setInterval(loadRequestHistory, 5000);
+            
+            document.querySelectorAll('.urgency-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.urgency-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    document.getElementById('urgency-level').value = this.dataset.urgency;
+                });
+            });
+        });
+
+        document.getElementById('patient-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const requestType = document.getElementById('request-type').value;
+            const urgencyLevel = document.getElementById('urgency-level').value;
+            const medicalHistory = document.getElementById('medical-history').value;
+            const additionalNotes = document.getElementById('additional-notes').value;
+
+            if (!requestType || !urgencyLevel || !medicalHistory.trim()) {
+                showAlert('Please fill in all required fields', 'error');
+                return;
+            }
+
+            try {
+                console.log('Submitting patient request to database...');
+
+                // Prepare request data based on request type
+                const requestData = {
+                    type: requestType,
+                    details: {
+                        urgency: urgencyLevel,
+                        medicalHistory: medicalHistory.trim(),
+                        additionalNotes: additionalNotes.trim(),
+                        priority: urgencyLevel === 'critical' ? 'high' : urgencyLevel === 'urgent' ? 'medium' : 'low'
+                    }
+                };
+
+                // Add type-specific details
+                if (requestType === 'blood') {
+                    const bloodGroup = document.getElementById('blood-group').value;
+                    const bloodUnits = document.getElementById('blood-units').value;
+                    
+                    if (!bloodGroup) {
+                        showAlert('Please select a blood group', 'error');
+                        return;
+                    }
+                    
+                    requestData.details.bloodType = bloodGroup;
+                    requestData.details.bloodUnits = parseInt(bloodUnits) || 1;
+                }
+                else if (requestType === 'bed') {
+                    const bedType = document.getElementById('bed-type').value;
+                    const bedDuration = document.getElementById('bed-duration').value;
+                    
+                    if (!bedType) {
+                        showAlert('Please select a bed type', 'error');
+                        return;
+                    }
+                    
+                    requestData.details.bedType = bedType;
+                    requestData.details.duration = parseInt(bedDuration) || 1;
+                }
+                else if (requestType === 'medicine') {
+                    const medicineName = document.getElementById('medicine-name').value;
+                    const medicineType = document.getElementById('medicine-type').value;
+                    const medicineQuantity = document.getElementById('medicine-quantity').value;
+                    
+                    if (!medicineName || !medicineType) {
+                        showAlert('Please fill in medicine details', 'error');
+                        return;
+                    }
+                    
+                    requestData.details.medicineName = medicineName;
+                    requestData.details.medicineType = medicineType;
+                    requestData.details.quantity = parseInt(medicineQuantity) || 1;
+                }
+                else if (requestType === 'doctor') {
+                    const doctorSpecialty = document.getElementById('doctor-specialty').value;
+                    const appointmentDate = document.getElementById('appointment-date').value;
+                    
+                    if (!doctorSpecialty) {
+                        showAlert('Please select a doctor specialty', 'error');
+                        return;
+                    }
+                    
+                    requestData.details.doctorSpecialty = doctorSpecialty;
+                    if (appointmentDate) {
+                        requestData.details.appointmentDate = appointmentDate;
+                    }
+                }
+
+                console.log('Request data:', requestData);
+
+                // Submit to database via API
+                const response = await fetch('/api/requests', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+                console.log('API response:', result);
+
+                if (response.ok && result.success) {
+                    // Also save to localStorage for backward compatibility
+                    const localRequest = {
+                        id: result.request.id,
+                        type: requestType,
+                        urgency: urgencyLevel,
+                        medicalHistory: medicalHistory.trim(),
+                        additionalNotes: additionalNotes.trim(),
+                        date: new Date().toLocaleDateString(),
+                        time: new Date().toLocaleTimeString(),
+                        status: 'Pending'
+                    };
+
+                    let requests = JSON.parse(localStorage.getItem('patientRequests') || '[]');
+                    requests.unshift(localRequest);
+                    localStorage.setItem('patientRequests', JSON.stringify(requests));
+
+                    this.reset();
+                    document.querySelectorAll('.urgency-btn').forEach(btn => btn.classList.remove('active'));
+                    document.querySelectorAll('.request-fields').forEach(field => {
+                        field.style.display = 'none';
+                    });
+                    showAlert(`Your ${requestType} request has been submitted successfully! It is now visible to all hospitals.`, 'success');
+                    console.log('Request saved to database and localStorage');
+                    
+                    loadRequestHistory();
+                } else {
+                    throw new Error(result.error || 'Failed to submit request');
+                }
+
+            } catch (error) {
+                console.error('Submit error:', error);
+                showAlert(`Failed to submit request: ${error.message}`, 'error');
+            }
+        });
+
+        // Load request history from database
+        async function loadRequestHistory() {
+            console.log(' Loading patient request history from database...');
+
+            try {
+                const token = localStorage.getItem('token');
+                const userType = localStorage.getItem('userType');
+                console.log('Debug - Token exists:', !!token);
+                console.log('Debug - User type:', userType);
+                
+                const response = await fetch('/api/requests', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                console.log('Debug - Response status:', response.status);
+                const result = await response.json();
+                console.log('Debug - API result:', result);
+                const container = document.getElementById('history-container');
+
+                if (response.ok && result.requests && result.requests.length > 0) {
+                    console.log(' Loaded patient requests:', result.requests.length);
+                    
+                    // Sort requests by most recent activity (responses first, then submissions)
+                    result.requests.sort((a, b) => {
+                        // Prioritize items with hospital responses (updatedAt)
+                        const dateA = new Date(a.updatedAt || a.createdAt);
+                        const dateB = new Date(b.updatedAt || b.createdAt);
+                        return dateB - dateA;
+                    });
+
+                    container.innerHTML = result.requests.map(req => {
+                        // Determine hospital information based on status
+                        let hospitalInfo = '';
+                        let statusInfo = '';
+
+                        if (req.status === 'approved' && req.hospitalName) {
+                            hospitalInfo = `<p><strong> Approved by:</strong> ${req.hospitalName}</p>`;
+                            statusInfo = `<p><strong>Action Date:</strong> ${new Date(req.updatedAt || req.createdAt).toLocaleDateString()} at ${new Date(req.updatedAt || req.createdAt).toLocaleTimeString()}</p>`;
+                        } else if (req.status === 'rejected') {
+                            // Legacy rejection format
+                            if (req.hospitalName) {
+                                hospitalInfo = `<p><strong> Rejected by:</strong> ${req.hospitalName}</p>`;
+                                if (req.rejectionReason) {
+                                    hospitalInfo += `<p><strong>Rejection Reason:</strong> ${req.rejectionReason}</p>`;
+                                }
+                                statusInfo = `<p><strong>Action Date:</strong> ${new Date(req.updatedAt || req.createdAt).toLocaleDateString()} at ${new Date(req.updatedAt || req.createdAt).toLocaleTimeString()}</p>`;
+                            }
+                        } else if (req.status === 'pending') {
+                            // Check for rejections in rejectedByHospitals array
+                            if (req.rejectedByHospitals && req.rejectedByHospitals.length > 0) {
+                                const rejections = req.rejectedByHospitals.map(rejection => `
+                                    <div style="margin: 5px 0; padding: 8px; background: #f8d7da; border-radius: 4px; border-left: 3px solid #dc3545;">
+                                        <strong> Rejected by:</strong> ${rejection.hospitalName}<br>
+                                        <strong>Reason:</strong> ${rejection.rejectionReason}<br>
+                                        <strong>Date:</strong> ${new Date(rejection.rejectedAt).toLocaleDateString()} at ${new Date(rejection.rejectedAt).toLocaleTimeString()}
+                                    </div>
+                                `).join('');
+                                hospitalInfo = rejections;
+                                statusInfo = `<p><strong>Status:</strong> Rejected by ${req.rejectedByHospitals.length} hospital(s), still available for others</p>`;
+                            } else {
+                                statusInfo = `<p><strong>Status:</strong> Waiting for hospital review</p>`;
+                            }
+                        }
+
+                        return `
+                        <div class="item-card" style="background: linear-gradient(145deg, #111 0%, #1a1a1a 100%); border-radius: 10px; padding: 15px; margin-bottom: 15px; border: 1px solid #333;">
+                            <div class="item-header">
+                                <h4 class="item-title"> ${req.type.charAt(0).toUpperCase() + req.type.slice(1)} Request</h4>
+                                <span class="status-badge status-${req.status.toLowerCase()}">${req.status.toUpperCase()}</span>
+                            </div>
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Patient:</strong> <span style="color: #2980b9; font-weight: 500;">${req.patientName || 'You'}</span></p>
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Email:</strong> <span style="color: #7f8c8d;">${req.patientEmail || 'N/A'}</span></p>
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Phone:</strong> <span style="color: #7f8c8d;">${req.patientPhone || 'N/A'}</span></p>
+                            ${req.type === 'blood' ? `
+                                ${req.details?.bloodType ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Required Blood Group:</strong> <span style="color: #e74c3c; font-weight: 600;">${req.details.bloodType}</span></p>` : ''}
+                                ${req.details?.bloodUnits ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Units Required:</strong> <span style="color: #8e44ad; font-weight: 500;">${req.details.bloodUnits}</span></p>` : ''}
+                            ` : ''}
+                            ${req.type === 'bed' ? `
+                                ${req.details?.bedType ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Type of Bed:</strong> <span style="color: #2980b9; font-weight: 500;">${req.details.bedType}</span></p>` : ''}
+                                ${req.details?.duration ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Expected Duration (days):</strong> <span style="color: #f39c12; font-weight: 500;">${req.details.duration}</span></p>` : ''}
+                            ` : ''}
+                            ${req.type === 'medicine' ? `
+                                ${req.details?.medicineName ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Medicine Name:</strong> <span style="color: #27ae60; font-weight: 500;">${req.details.medicineName}</span></p>` : ''}
+                                ${req.details?.medicineType ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Medicine Type:</strong> <span style="color: #16a085; font-weight: 500;">${req.details.medicineType}</span></p>` : ''}
+                                ${req.details?.quantity ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Quantity:</strong> <span style="color: #8e44ad; font-weight: 500;">${req.details.quantity}</span></p>` : ''}
+                            ` : ''}
+                            ${req.type === 'doctor' ? `
+                                ${req.details?.doctorSpecialty ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Doctor Specialty:</strong> <span style="color: #2980b9; font-weight: 600;">${req.details.doctorSpecialty}</span></p>` : ''}
+                                ${req.details?.appointmentDate ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Preferred Date:</strong> <span style="color: #f39c12; font-weight: 500;">${req.details.appointmentDate}</span></p>` : ''}
+                            ` : ''}
+                            ${req.details?.urgency ? `<p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Urgency Level:</strong> <span style="color: ${req.details.urgency === 'high' || req.details.urgency === 'critical' ? '#e74c3c' : req.details.urgency === 'medium' ? '#f39c12' : '#27ae60'}; font-weight: 600;">${req.details.urgency}</span></p>` : ''}
+                            <p style="margin: 6px 0; color: #2c3e50;"><strong style="color: #34495e;">Submitted:</strong> <span style="color: #7f8c8d;">${new Date(req.createdAt).toLocaleDateString()} at ${new Date(req.createdAt).toLocaleTimeString()}</span></p>
+                            ${req.details?.medicalHistory ? `<p><strong>Medical History:</strong> ${req.details.medicalHistory.substring(0, 100)}${req.details.medicalHistory.length > 100 ? '...' : ''}</p>` : ''}
+
+                            ${hospitalInfo}
+                            ${statusInfo}
+
+                            <p style="font-size: 12px; color: #95a5a6; margin-top: 12px; padding-top: 8px; border-top: 1px solid #ecf0f1;"><strong style="color: #7f8c8d;">Request ID:</strong> <span style="font-family: monospace; color: #6c757d;">${req._id}</span></p>
+
+                            <div class="action-buttons" style="margin-top: 10px;">
+                                ${req.status === 'pending' ? `
+                                    <button class="delete-btn" onclick="deleteRequest('${req._id}')" style="padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">
+                                        Delete Request
+                                    </button>
+                                ` : `
+                                    <span style="color: #666; font-size: 12px;">Cannot delete ${req.status.toLowerCase()} request</span>
+                                `}
+                            </div>
+                        </div>
+                        `;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<p style="text-align: center; color: #ccc; padding: 20px;">No requests yet. Submit your first request!</p>';
+                }
+
+            } catch (error) {
+                console.error(' Load request history error:', error);
+
+                // Fallback to localStorage if API fails
+                console.log(' Falling back to localStorage...');
+                const requests = JSON.parse(localStorage.getItem('patientRequests') || '[]');
+                const container = document.getElementById('history-container');
+
+                if (requests.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #ccc; padding: 20px;">No requests yet. Submit your first request!</p>';
+                    return;
+                }
+
+                container.innerHTML = requests.map(req => `
+                    <div class="history-item">
+                        <div class="item-header">
+                            <h4 class="item-title"> Blood Request</h4>
+                            <span class="status-badge status-${req.status.toLowerCase()}">${req.status}</span>
+                        </div>
+                        <p><strong>Blood Group:</strong> ${req.bloodGroup}</p>
+                        <p><strong>Urgency:</strong> ${req.urgency}</p>
+                        <p><strong>Date:</strong> ${req.date} at ${req.time}</p>
+                        <p><strong>Medical History:</strong> ${req.medicalHistory}</p>
+                        ${req.additionalNotes ? `<p><strong>Notes:</strong> ${req.additionalNotes}</p>` : ''}
+                    </div>
+                `).join('');
+            }
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alert-container');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            container.appendChild(alert);
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>
+
