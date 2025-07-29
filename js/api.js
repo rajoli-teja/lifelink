@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'https://lifelink-l9n1.onrender.com';
 
 // API Object
 const api = {
