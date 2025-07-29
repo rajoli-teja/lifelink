@@ -23,20 +23,14 @@ LifeLink is a full-stack web application that connects donors, hospitals, and pa
 ## Tech Stack
 
 - Frontend:
-  - HTML5
-  - CSS3
-  - JavaScript (Vanilla)
+  - HTML
+  - CSS
+  - JavaScript
 
 - Backend:
   - Node.js
   - Express.js
   - MongoDB
-
-## Prerequisites
-
-- Node.js (v14 or higher)
-- MongoDB (v4.4 or higher)
-- npm (v6 or higher)
 
 ## Default Admin Account
 
