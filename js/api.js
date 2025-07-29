@@ -1,5 +1,6 @@
 // API Configuration
-const API_BASE_URL = 'https://lifelink-l9n1.onrender.com';
+const API_BASE_URL = 'https://lifelink-l9n1.onrender.com/api';
+
 
 // API Object
 const api = {
