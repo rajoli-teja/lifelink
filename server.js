@@ -10,9 +10,10 @@ const app = express();
 
 // Middleware
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'file://'],
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'https://lifelink-l9n1.onrender.com'],
     credentials: true
 }));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '/')));
@@ -30,7 +31,7 @@ app.use((req, res, next) => {
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: '/api/users/auth/google/callback',
+    callbackURL: 'https://lifelink-l9n1.onrender.com/api/users/auth/google/callback',
     scope: ['profile', 'email']
 }, async (accessToken, refreshToken, profile, done) => {
     try {
