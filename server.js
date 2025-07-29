@@ -10,7 +10,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'https://lifelink-l9n1.onrender.com'],
+    origin: ['https://lifelink-l9n1.onrender.com'],
     credentials: true
 }));
 
